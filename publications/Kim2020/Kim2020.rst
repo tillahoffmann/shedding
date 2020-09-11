@@ -1,0 +1,5 @@
+.. jinja::
+   :key: publications/Kim2020
+   :file: docs/publication_template.jinja
+
+Kim et al. report on 74 patients and summarise their findings regarding viral RNA copy number in the abstract and results section. The number of patients for which stool samples were collected is 38 (see Materials and Methods); individual viral loads are not reported.

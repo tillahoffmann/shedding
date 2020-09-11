@@ -1,0 +1,214 @@
+{
+    "$schema": "../../schema.json",
+    "key": "Zheng et al. 2020",
+    "doi": "10.1136/bmj.m1443",
+    "title": "Viral load dynamics and disease severity in patients infected with SARS-CoV-2 in Zhejiang province, China, January-March 2020: retrospective cohort study",
+    "patients": {},
+    "samples": {
+        "n": 842
+    },
+    "loq": 3,
+    "assay": "ORF1ab",
+    "loads": [
+        {
+            "value": 6.680532131835189,
+            "severity": "mild"
+        },
+        {
+            "value": 5.906905261607047,
+            "severity": "mild"
+        },
+        {
+            "value": 5.744622264028791,
+            "severity": "mild"
+        },
+        {
+            "value": 5.267058272707118,
+            "severity": "mild"
+        },
+        {
+            "value": 5.010820283143492,
+            "severity": "mild"
+        },
+        {
+            "value": 4.9199316047040895,
+            "severity": "mild"
+        },
+        {
+            "value": 4.341450198435606,
+            "severity": "mild"
+        },
+        {
+            "value": 4.271914154553819,
+            "severity": "mild"
+        },
+        {
+            "value": 3.6804811328572953,
+            "severity": "mild"
+        },
+        {
+            "value": 3.444718170439998,
+            "severity": "mild"
+        },
+        {
+            "value": 3.4099028681966814,
+            "severity": "mild"
+        },
+        {
+            "value": 3.375087565953365,
+            "severity": "mild"
+        },
+        {
+            "value": 8.088161295600699,
+            "severity": "severe"
+        },
+        {
+            "value": 7.711141789199974,
+            "severity": "severe"
+        },
+        {
+            "value": 6.990988409773951,
+            "severity": "severe"
+        },
+        {
+            "value": 6.574233262241702,
+            "severity": "severe"
+        },
+        {
+            "value": 5.304192965965974,
+            "severity": "severe"
+        },
+        {
+            "value": 5.2342850545370325,
+            "severity": "severe"
+        },
+        {
+            "value": 5.197241734446905,
+            "severity": "severe"
+        },
+        {
+            "value": 4.93394994875311,
+            "severity": "severe"
+        },
+        {
+            "value": 4.970991143885822,
+            "severity": "severe"
+        },
+        {
+            "value": 4.403187648614207,
+            "severity": "severe"
+        },
+        {
+            "value": 4.621267777924949,
+            "severity": "severe"
+        },
+        {
+            "value": 4.0617261170724035,
+            "severity": "severe"
+        },
+        {
+            "value": 3.761391011288481,
+            "severity": "severe"
+        },
+        {
+            "value": 3.674958368542697,
+            "severity": "severe"
+        },
+        {
+            "value": 4.736481906341794,
+            "severity": "severe"
+        },
+        {
+            "value": 4.539011738973063,
+            "severity": "severe"
+        },
+        {
+            "value": 4.287974582676071,
+            "severity": "severe"
+        },
+        {
+            "value": 3.968886727728499,
+            "severity": "severe"
+        },
+        {
+            "value": 3.1255357548875793,
+            "severity": "severe"
+        },
+        {
+            "value": 3.2077917938394656,
+            "severity": "severe"
+        },
+        {
+            "value": 2.709523279970931,
+            "severity": "severe"
+        },
+        {
+            "value": 2.56552979084044,
+            "severity": "severe"
+        },
+        {
+            "value": 1.95251251422836,
+            "severity": "severe"
+        },
+        {
+            "value": 3.8248921761193024,
+            "severity": "severe"
+        },
+        {
+            "value": 3.9920030769383317,
+            "severity": "severe"
+        },
+        {
+            "value": 4.325202774061069,
+            "severity": "severe"
+        },
+        {
+            "value": 4.740844443909268,
+            "severity": "severe"
+        },
+        {
+            "value": 5.102825626703062,
+            "severity": "severe"
+        },
+        {
+            "value": 5.234470988310608,
+            "severity": "severe"
+        },
+        {
+            "value": 4.8354464854266865,
+            "severity": "severe"
+        },
+        {
+            "value": 4.7737100977267914,
+            "severity": "severe"
+        },
+        {
+            "value": 4.407552311139096,
+            "severity": "severe"
+        },
+        {
+            "value": 4.354075632900855,
+            "severity": "severe"
+        },
+        {
+            "value": 3.6669749035446415,
+            "severity": "severe"
+        },
+        {
+            "value": 4.086607243413162,
+            "severity": "severe"
+        },
+        {
+            "value": 4.004352266939982,
+            "severity": "severe"
+        },
+        {
+            "value": 4.798218294041689,
+            "severity": "severe"
+        },
+        {
+            "value": 4.452857465648293,
+            "severity": "severe"
+        }
+    ]
+}

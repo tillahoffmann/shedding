@@ -1,0 +1,91 @@
+{
+    "$schema": "../../schema.json",
+    "key": "Wang et al. 2020",
+    "doi": "10.1001/jama.2020.3786",
+    "title": "Detection of SARS-CoV-2 in Different Types of Clinical Specimens",
+    "assay": "CCDC-ORF1ab",
+    "loq": 1.3778598607648163,
+    "patients": {
+        "n": 14,
+        "negative": 8,
+        "positive": 6
+    },
+    "samples": {
+        "n": 14,
+        "negative": 8,
+        "positive": 6
+    },
+    "loads": [
+        {
+            "patient": 7,
+            "threshold": 43.13341301591858,
+            "value": 0.426206767601502
+        },
+        {
+            "patient": 8,
+            "threshold": 24.14974346094506,
+            "value": 6.191762651808703
+        },
+        {
+            "patient": 9,
+            "threshold": 45.18288872543742,
+            "value": -0.19624226430657554
+        },
+        {
+            "patient": 10,
+            "threshold": 31.053075254446078,
+            "value": 4.09514244213871
+        },
+        {
+            "patient": 11,
+            "threshold": 45.18288872543742,
+            "value": -0.19624226430657554
+        },
+        {
+            "patient": 12,
+            "threshold": 37.57853518591606,
+            "value": 2.1132862053297266
+        },
+        {
+            "patient": 13,
+            "threshold": 45.18288872543742,
+            "value": -0.19624226430657554
+        },
+        {
+            "patient": 14,
+            "threshold": 35.960646071783096,
+            "value": 2.604657490263426
+        },
+        {
+            "patient": 15,
+            "threshold": 38.38747974298255,
+            "value": 1.867600562862875
+        },
+        {
+            "patient": 16,
+            "threshold": 45.23710427804288,
+            "value": -0.21270814291001106
+        },
+        {
+            "patient": 19,
+            "threshold": 44.212114144929615,
+            "value": 0.09859299284312506
+        },
+        {
+            "patient": 18,
+            "threshold": 42.16279167115161,
+            "value": 0.7209954853176797
+        },
+        {
+            "patient": 17,
+            "threshold": 45.129009543970426,
+            "value": -0.17987854543527249
+        },
+        {
+
+            "patient": 20,
+            "threshold": 31.915900861708103,
+            "value": 3.8330925132464886
+        }
+    ]
+}

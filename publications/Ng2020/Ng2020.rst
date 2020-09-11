@@ -1,0 +1,5 @@
+.. jinja::
+   :key: publications/Ng2020
+   :file: docs/publication_template.jinja
+
+Ng et al. consider the RNA load in 81 faecal samples obtained from 21 cases and 114 faecal samples from  114 asymptomatic (presumed non-infected) individuals from high-risk areas. All samples from the control group tested negative. The median number of positive samples per patient was 2.

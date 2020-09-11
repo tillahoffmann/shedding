@@ -1,0 +1,5 @@
+.. jinja::
+   :key: publications/Pan2020
+   :file: docs/publication_template.jinja
+
+Pan et al. report viral loads in samples obtained from 82 patients, but only analysed faecal samples from 17 patients. Individual viral loads are not reported. Faecal samples from two patients followed more closely tested negative.
