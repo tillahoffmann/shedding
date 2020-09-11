@@ -1,6 +1,12 @@
 💩 Shedding of SARS-CoV-2 RNA in faeces
 =======================================
 
+.. image:: https://github.com/tillahoffmann/shedding/workflows/CI/badge.svg
+  :target: https://github.com/tillahoffmann/shedding/actions?query=workflow%3A%22CI%22
+
+.. image:: https://readthedocs.org/projects/shedding/badge/?version=latest
+  :target: https://shedding.readthedocs.io/en/latest/?badge=latest
+
 Uncertainties surrounding the concentration of viral RNA fragments in the faeces of individuals infected with SARS-CoV-2 poses a major challenge for wastewater-based surveillance of Covid-19. This repository serves to collate data from quantitative studies on RNA load in faecal samples to constrain the shedding distribution.
 
 📊 Datasets
