@@ -1,0 +1,9 @@
+.. _{{key.replace(' ', '_')}}:
+
+{{title if title is defined else 'Missing title'}}
+{{'=' * (title | length)}}
+
+* DOI: `{{doi}} <https://doi.org/{{doi}}>`__
+* Patients: {{patients.get('n', 'unknown')}} (positive: {{patients.get('positive', 'unknown')}}, negative: {{patients.get('negative', 'unknown')}})
+* Samples: {{samples.get('n', 'unknown')}} (positive: {{samples.get('positive', 'unknown')}}, negative: {{samples.get('negative', 'unknown')}})
+* Assay: {{assay}}
