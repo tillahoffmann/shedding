@@ -1,0 +1,135 @@
+{
+    "$schema": "../../schema.json",
+    "assay": "CCDC-N",
+    "doi": "10.1101/2020.03.24.20042689",
+    "key": "Lu et al. 2020",
+    "patients": {
+        "n": 15,
+        "positive": 11,
+        "negative": 4
+    },
+    "samples": {
+        "n": 23,
+        "negative": 10,
+        "positive": 13
+    },
+    "loq": 2.1760912591,
+    "title": "SARS-CoV-2 detection using digital PCR for COVID-19 diagnosis, treatment monitoring and criteria for discharge",
+    "loads": [
+        {
+            "patient": 1,
+            "date": "2020-02-03",
+            "value": 2.281033367
+        },
+        {
+            "patient": 2,
+            "date": "2020-02-05",
+            "value": 2.541579244
+        },
+        {
+            "patient": 4,
+            "date": "2020-02-02",
+            "value": 2.57634135
+        },
+        {
+            "patient": 4,
+            "date": "2020-02-24",
+            "value": 2.053078443
+        },
+        {
+            "patient": 6,
+            "date": "2020-02-18",
+            "value": null
+        },
+        {
+            "patient": 6,
+            "date": "2020-02-03",
+            "value": 2.51054501
+        },
+        {
+            "patient": 7,
+            "date": "2020-02-08",
+            "value": 2.278753601
+        },
+        {
+            "patient": 7,
+            "date": "2020-02-24",
+            "value": null
+        },
+        {
+            "patient": 8,
+            "date": "2020-02-21",
+            "value": 2.967547976
+        },
+        {
+            "patient": 9,
+            "date": "2020-02-14",
+            "value": null
+        },
+        {
+            "patient": 9,
+            "date": "2020-02-24",
+            "value": 1.924279286
+        },
+        {
+            "patient": 10,
+            "date": "2020-02-01",
+            "value": 2.318063335
+        },
+        {
+            "patient": 10,
+            "date": "2020-02-14",
+            "value": null
+        },
+        {
+            "patient": 11,
+            "date": "2020-02-13",
+            "value": 2.025305865
+        },
+        {
+            "patient": 11,
+            "date": "2020-02-24",
+            "value": null
+        },
+        {
+            "patient": 13,
+            "date": "2020-02-12",
+            "value": 3.525692525
+        },
+        {
+            "patient": 13,
+            "date": "2020-02-24",
+            "value": 2.250420002
+        },
+        {
+            "patient": 21,
+            "date": "2020-02-13",
+            "value": null
+        },
+        {
+            "patient": 22,
+            "date": "2020-02-12",
+            "value": null
+        },
+        {
+            "patient": 29,
+            "date": "2020-02-13",
+            "value": null
+        },
+        {
+            "patient": 29,
+            "date": "2020-02-24",
+            "value": 2.222716471
+        },
+        {
+            "patient": 31,
+            "date": "2020-02-18",
+            "value": null
+        },
+        {
+            "patient": 36,
+            "date": "2020-02-12",
+            "value": null
+        }
+    ]
+}

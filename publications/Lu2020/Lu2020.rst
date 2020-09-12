@@ -1,0 +1,9 @@
+.. jinja::
+   :file: docs/publication_template.jinja
+   :key: publications/Lu2020
+
+Lu et al. collected 108 samples from 36 patients and compared RT-qPCR and ddPCR using the CCDC-ORF1ab and CCDC-N primers; sample and patient numbers were smaller for stool samples only. ddPCR turned out to be more sensitive, especially CCDC-N. Viral load data (ddPCR with CCDC-N primers) were extracted from the data supplement.
+
+.. warning::
+
+   The study reports RNA concentration as template copies per µL of the *final ddPCR reaction volume*, not the original stool sample.

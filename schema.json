@@ -10,6 +10,7 @@
                 "PowerChek-E",
                 "E_Sarbeco",
                 "CCDC-ORF1ab",
+                "CCDC-N",
                 "HKU-N",
                 "S",
                 "?"
@@ -113,6 +114,10 @@
                     "day": {
                         "type": "integer",
                         "description": "day as reported by the study (often since symptom onset or hospital admission)"
+                    },
+                    "date": {
+                        "type": "string",
+                        "description": "specimen collection date"
                     },
                     "patient": {
                         "type": "integer",
