@@ -7,6 +7,9 @@
 .. image:: https://readthedocs.org/projects/shedding/badge/?version=latest
   :target: https://shedding.readthedocs.io/en/latest/?badge=latest
 
+.. image:: https://img.shields.io/github/stars/tillahoffmann/shedding?style=social
+  :target: https://github.com/tillahoffmann/shedding
+
 Uncertainties surrounding the concentration of viral RNA fragments in the faeces of individuals infected with SARS-CoV-2 poses a major challenge for wastewater-based surveillance of Covid-19. This repository serves to collate data from quantitative studies on RNA load in faecal samples to constrain the shedding distribution.
 
 📊 Datasets
