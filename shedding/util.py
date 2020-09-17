@@ -37,7 +37,7 @@ def dict_to_array(mapping, size=None, fill_value=0, dtype=None):
     return x
 
 
-def maybe_build_model(model_code, root=None, **kwargs):
+def maybe_build_model(model_code, root='.pystan', **kwargs):
     """
     Build a pystan model or retrieve a cached version.
 
@@ -56,21 +56,17 @@ def maybe_build_model(model_code, root=None, **kwargs):
         Compiled stan model.
     """
     # Construct a filename
-    if root:
-        identifier = hashlib.sha1(model_code.encode()).hexdigest()
-        filename = os.path.join(root, identifier + '.pkl')
-    else:
-        filename = None
+    identifier = hashlib.sha1(model_code.encode()).hexdigest()
+    filename = os.path.join(root, identifier + '.pkl')
 
-    if filename and os.path.isfile(filename):  # Try to load the model
+    if os.path.isfile(filename):  # Try to load the model
         with open(filename, 'rb') as fp:
             return pickle.load(fp)
     else:  # Build and store the model otherwise
         model = pystan.StanModel(model_code=model_code, **kwargs)
-        if filename:
-            os.makedirs(root, exist_ok=True)
-            with open(filename, 'wb') as fp:
-                pickle.dump(model, fp)
+        os.makedirs(root, exist_ok=True)
+        with open(filename, 'wb') as fp:
+            pickle.dump(model, fp)
         return model
 
 
