@@ -28,6 +28,7 @@ Datasets can be found in the ``publications`` directory as JSON files following 
         - :rspan:`1` LOQ
         - :cspan:`2` Patients
         - :cspan:`2` Samples
+        - Detailed data
       * - n
         - \+
         - \-
@@ -42,11 +43,12 @@ Datasets can be found in the ``publications`` directory as JSON files following 
         - {{', '.join(assay) if assay is iterable and assay is not string else assay}}
         - {{('%.2f' | format(pub['loq'])) if pub['loq'] else '?'}}
         - {{patients.get('n', '?')}}
-        - {{patients.get('positive', '?')}}
-        - {{patients.get('negative', '?')}}
+        - {{patients.get('positive', '?')}}{% if 'positive' in patients and 'n' in patients %} ({{'%.1f' | format(100 * patients['positive'] / patients['n'])}}%){% endif %}
+        - {{patients.get('negative', '?')}}{% if 'negative' in patients and 'n' in patients %} ({{'%.1f' | format(100 * patients['negative'] / patients['n'])}}%){% endif %}
         - {{samples.get('n', '?')}}
         - {{samples.get('positive', '?')}}
         - {{samples.get('negative', '?')}}
+        - {{ '\\+' if 'loads' in pub else '\\-' }}
       {% endfor -%}
 
 .. plot:: plot_datasets.py
