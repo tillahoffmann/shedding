@@ -1,24 +1,28 @@
-.PHONY : docs tests clean
+.PHONY : clean docs doctests tests
 
 build : flake8 tests docs
 
-flake8 :
+flake8 : requirements.txt
 	flake8
 
-tests :
-	pytest -v
+tests : requirements.txt
+	pytest -v --cov=shedding --cov-report=html --cov-report=term-missing
 
-docs :
+doctests : requirements.txt
+	sphinx-build -b doctest . docs/_build
+
+docs : doctests requirements.txt
 	sphinx-build . docs/_build
 
 clean :
 	rm -rf docs/_build
 
-requirements.txt : requirements.in
-	pip-compile -v
+# Generate pinned dependencies
+requirements.txt : requirements.in setup.py
+	pip-compile -v --upgrade
 	pip-sync
 
+# Build the repository using a GitHub action for local debugging
+# (cf. https://github.com/nektos/act)
 build_action :
-    # Build the repository using a GitHub action for local debugging
-	# (cf. https://github.com/nektos/act)
 	act -P ubuntu-latest=nektos/act-environments-ubuntu:18.04
