@@ -143,6 +143,7 @@ cython_debug/
 .DS_Store
 .vscode
 playground/
+.pystan
 
 # Exclude everything in the publications folder ...
 publications/*/*

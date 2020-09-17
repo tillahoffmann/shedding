@@ -1,10 +1,4 @@
-flake8
+-e file:.[tests,docs]
 jupyter
-jsonschema
-matplotlib
-numpy
-pystan<3
-pytest
-scipy
-sphinx
-git+http://github.com/return42/linuxdoc.git
+pandas
+tqdm

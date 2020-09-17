@@ -60,8 +60,11 @@ Datasets can be found in the ``publications`` directory as JSON files following 
 
 Contributions in the form of new datasets or corrections are most welcome in the form of pull requests from forks. See `here <https://guides.github.com/activities/forking/>`__ for more details on how to contribute.
 
+📋 Contents
+-----------
+
 .. toctree::
    :glob:
-   :hidden:
 
+   docs/shedding
    publications/*/*

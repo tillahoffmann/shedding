@@ -101,6 +101,9 @@ master_doc = 'README'
 extensions = [
     'linuxdoc.rstFlatTable',  # For fancy tables
     'matplotlib.sphinxext.plot_directive',  # For plots
+    'sphinx.ext.autodoc',  # To generate documentation
+    'sphinx.ext.napoleon',  # For docstring parsing
+    'sphinx.ext.doctest',  # For testing in docstrings
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -128,3 +131,5 @@ html_static_path = []
 plot_formats = [
     ('png', 144),
 ]
+
+doctest_global_setup = 'from shedding import *'
