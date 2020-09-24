@@ -1,12 +1,18 @@
-import hashlib
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 import numbers
 import numpy as np
-import os
-import pickle
-import pystan
 import re
+import sys
+
+
+def skip_doctest(obj):
+    """
+    Decorator to skip doctests.
+    """
+    if 'doctest' in sys.argv:
+        obj.__doc__ = "Skipping doctest."
+    return obj
 
 
 def dict_to_array(mapping, size=None, fill_value=0, dtype=None):
@@ -35,86 +41,6 @@ def dict_to_array(mapping, size=None, fill_value=0, dtype=None):
     for i, value in mapping.items():
         x[i] = value
     return x
-
-
-def maybe_build_model(model_code, root='.pystan', **kwargs):
-    """
-    Build a pystan model or retrieve a cached version.
-
-    Parameters
-    ----------
-    model_code : str
-        Stan model code to build.
-    root : str
-        Root directory at which to cache models.
-    **kwargs : dict
-        Additional arguments passed to the `pystan.StanModel` constructor.
-
-    Returns
-    -------
-    model : pystan.StanModel
-        Compiled stan model.
-    """
-    # Construct a filename
-    identifier = hashlib.sha1(model_code.encode()).hexdigest()
-    filename = os.path.join(root, identifier + '.pkl')
-
-    if os.path.isfile(filename):  # Try to load the model
-        with open(filename, 'rb') as fp:
-            return pickle.load(fp)
-    else:  # Build and store the model otherwise
-        model = pystan.StanModel(model_code=model_code, **kwargs)
-        os.makedirs(root, exist_ok=True)
-        with open(filename, 'wb') as fp:
-            pickle.dump(model, fp)
-        return model
-
-
-def filter_pystan_data(data):
-    """
-    Filter a data dictionary to retain only values supported by `pystan`.
-
-    Parameters
-    ----------
-    data : dict
-        Data from which to filter out values not supported by `pystan`.
-
-    Returns
-    -------
-    data : dict
-        Data after removal of values not supported by `pystan`.
-    """
-    return {
-        key: value for key, value in data.items()
-        if isinstance(value, numbers.Number)
-        or (isinstance(value, np.ndarray) and value.dtype in (float, int))
-    }
-
-
-def transpose_samples(fit, pars=None):
-    """
-    Transpose samples from a `pystan.StanFit4Model` to samples of dictionaries.
-
-    Parameters
-    ----------
-    fit : pystan.StanFit4Model
-        Fit obtained from a `pystan` model.
-    pars : list[str]
-        Parameter names to extract; defaults to all parameters.
-
-    Returns
-    -------
-    samples : list[dict]
-        Sequence of samples, each represented by a dictionary.
-    """
-    mapping = fit.extract(pars)
-    samples = []
-    for key, values in mapping.items():
-        for i, value in enumerate(values):
-            if not i < len(samples):
-                samples.append({})
-            samples[i][key] = value
-    return samples
 
 
 def extract_kvps(x, pattern='(.*?)_rep$'):
@@ -224,3 +150,11 @@ def replication_percentile_plot(data, replicates, key=None, percentiles=10, ax=N
     if label:
         violins['cbars'].set_label(label)
     return violins
+
+
+def softmax(x, axis=None):
+    """
+    Evaluate the softmax of `x` in a stable fashion.
+    """
+    proba = np.exp(x - np.max(x, axis=axis, keepdims=True))
+    return proba / np.sum(proba, axis=axis, keepdims=True)
