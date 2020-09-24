@@ -151,9 +151,10 @@ class ReplicationMode(enum.Enum):
     assess the fit of new samples being collected for known patients or for `NEW_GROUPS` to assess
     the fit of samples being collected from new, unknown patients.
 
-    .. note::
-       The `NEW_GROUPS` replication mode can be used to simulate data given hyperparameters at the
-       population level.
+    Notes
+    -----
+    The `NEW_GROUPS` replication mode can be used to simulate data given hyperparameters at the
+    population level.
     """
     EXISTING_GROUPS = 1
     NEW_GROUPS = 2
@@ -210,8 +211,8 @@ class Model:
         """
         Evaluate a statistic of the model (using simulation where necessary).
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         sample : dict or list[dict]
             Posterior sample or sequence of posterior samples.
         statistic : str or list[str]
@@ -308,18 +309,37 @@ class InflationMixin:
 
 
 def sample_indicators(x, data):
-    # Generate the indicator variables by sampling from the posterior
-    # as if we hadn't marginalised them out. So we want to compare the
-    # positive outcome and negative outcome in the joint distribution
-    # (conditioned on everything else we know). Luckily, the contributions
-    # we have calculated are just what we're after
+    """
+    Sample shedding indicator variables conditional on the data and a sample from the posterior
+    using a Gibbs sampling step.
+
+    Parameters
+    ----------
+    x : dict
+            Posterior sample which must include the `patient_contrib_` key.
+    data : dict
+        Data from which the posterior samples were inferred.
+
+    Returns
+    -------
+    z : np.ndarray<bool>[num_patients]
+        Binary indicators for patients being shedders or non-shedders.
+
+    Notes
+    -----
+    Because `pystan` does not support discrete parameters, we need to marginalise with respect to
+    the shedding indicator variables analytically for inference purposes. However, we need to sample
+    the indicator variables to replicate data.
+    """
+    # Evaluate the probability of being a shedder or non-shedder in the log space using a Gibbs
+    # sampling approach.
     logprobas = np.asarray([
         np.log1p(-x['rho']) * np.ones(data['num_patients']),
         np.log(x['rho']) + x['patient_contrib_']
     ])
     probas = softmax(logprobas, axis=0)
-    # Make sure that everyone who has shed remains a shedder
+    # Ensure everyone who has a positive sample remains a shedder in the replication.
     probas[0, data['num_positives_by_patient'] > 0] *= 0
-    # Renormalise and pick the probability to be a shedder
+    # Renormalise and pick the probability to be a shedder.
     probas = (probas / np.sum(probas, axis=0))[1]
     return np.random.uniform(0, 1, data['num_patients']) < probas
