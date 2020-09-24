@@ -3,11 +3,11 @@ shedding python package
 
 .. jinja::
 
-   {% set modules = ['data', 'util'] %}
    {% for module in modules %}
-   shedding.{{module}}
-   ---------{{'-' * (module | length)}}
+   {% set depth = module.split('.') | length %}
+   {{module}}
+   {{('-' if depth == 2 else '^') * (module | length)}}
 
-   .. automodule:: shedding.{{module}}
+   .. automodule:: {{module}}
       :members:
    {% endfor %}

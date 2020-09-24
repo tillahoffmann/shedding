@@ -10,9 +10,11 @@ from docutils.parsers.rst import directives
 from docutils.statemachine import StringList
 from docutils import nodes
 from glob import glob
+import inspect
 from jinja2 import Template
 import json
 import os
+import shedding
 import sphinx
 
 
@@ -73,6 +75,17 @@ for filename in sorted(filenames):
     with open(filename) as fp:
         key, _ = os.path.splitext(os.path.basename(filename))
         jinja_context.setdefault('publications', {})[key] = json.load(fp)
+
+# Get all modules for the documentation
+modules = set()
+queue = [shedding]
+while queue:
+    module = queue.pop(0)
+    for _, module in inspect.getmembers(module):
+        if inspect.ismodule(module) and module.__name__.startswith('shedding'):
+            queue.append(module)
+            modules.add(module.__name__)
+jinja_context['modules'] = list(sorted(modules))
 
 # -- Path setup --------------------------------------------------------------
 
