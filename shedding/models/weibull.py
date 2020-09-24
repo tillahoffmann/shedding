@@ -59,7 +59,8 @@ class WeibullModel(util.Model):
     }
     """
 
-    def _replicate(self, x, data, mode, **kwargs):
+    @util.broadcast_samples
+    def replicate(self, x, data, mode, **kwargs):
         if mode == util.ReplicationMode.NEW_GROUPS:
             patient_mean = weibull_rng(x['population_shape'], x['population_scale'],
                                        data['num_patients'])
@@ -146,7 +147,8 @@ class WeibullInflatedModel(util.InflationMixin, WeibullModel):
     }
     """
 
-    def _replicate(self, x, data, mode, **kwargs):
+    @util.broadcast_samples
+    def replicate(self, x, data, mode, **kwargs):
         if mode == util.ReplicationMode.NEW_GROUPS:
             patient_mean = weibull_rng(x['population_shape'], x['population_scale'],
                                        data['num_patients'])
