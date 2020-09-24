@@ -192,11 +192,18 @@ class Model:
     Pystan model abstraction with python-based replication.
     """
     def __init__(self, model_code=None, **kwargs):
-        model_code = model_code or self.MODEL_CODE
-        if not model_code:
+        self.model_code = model_code or self.MODEL_CODE
+        if not self.model_code:
             raise ValueError("missing model code")
         kwargs.setdefault('model_name', self.__class__.__name__)
-        self.pystan_model = maybe_build_model(model_code, **kwargs)
+        self._kwargs = kwargs
+        self._pystan_model = None
+
+    @property
+    def pystan_model(self):
+        if self._pystan_model is None:
+            self._pystan_model = maybe_build_model(self.model_code, **self._kwargs)
+        return self._pystan_model
 
     MODEL_CODE = None
 
