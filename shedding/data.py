@@ -45,7 +45,7 @@ def load_datasets(names, root=None):
     return {name: load_dataset(name, root) for name in names}
 
 
-def flatten_datasets(datasets, loq_fill_value=np.nan, day_fill_value=np.nan, stan_idx=True):
+def flatten_datasets(datasets, loq_fill_value=np.nan, day_fill_value=np.nan):
     """
     Flatten datasets into a uniform structure for inference.
 
@@ -54,11 +54,10 @@ def flatten_datasets(datasets, loq_fill_value=np.nan, day_fill_value=np.nan, sta
     datasets : dict
         Mapping of datasets.
     loq_fill_value : float
-        Fill value to replace loads below the level of quantification (LOQ).
+        Fill value to replace loads below the level of quantification (LOQ) as log10 gene copies per
+        mL.
     day_fill_value : float
-        Fill value to replace missing information about days since symptoms began.
-    stan_idx : bool
-        Whether to use one-based indices as used by Stan.
+        Fill value to replace missing information about days since symptoms began as days.
 
     Returns
     -------
@@ -75,16 +74,11 @@ def flatten_datasets(datasets, loq_fill_value=np.nan, day_fill_value=np.nan, sta
         * **num_negatives_by_patient** (`ndarray[int]<num_patients>`): Number of negative samples
           for each patient.
         * **idx** (`ndarray[int]<num_samples>`): Index of the patient from whom each sample was
-          collected. The indices are one-based if `stan_idx == True` and zero-based otherwise.
-        * **load** (`ndarray[float]<num_samples>`): Viral RNA load for each sample as log10 gene
-          copies per mL or `loq_fill_value` if the concentration is below the level of
-          quantification.
-        * **load10** (`ndarray[float]<num_samples>`): Viral RNA load for each sample as gene copies
+          collected. The indices are one-based for compatibility with `pystan`.
+        * **load** (`ndarray[float]<num_samples>`): Viral RNA load for each sample as gene copies
           per mL or `10 ** loq_fill_value` if the concentration is below the level of
           quantification.
-        * **loq** (`ndarray[float]<num_samples>`): Level of quantification for each sample as log10
-          gene copies per mL.
-        * **loq10** (`ndarray[float]<num_samples>`): Level of quantification for each sample as gene
+        * **loq** (`ndarray[float]<num_samples>`): Level of quantification for each sample as gene
           copies per mL.
         * **positive** (`ndarray[bool]<num_samples>`): Indicator for each sample as to whether the
           RNA load is above the level of quantification.
@@ -102,7 +96,7 @@ def flatten_datasets(datasets, loq_fill_value=np.nan, day_fill_value=np.nan, sta
     num_positives_by_patient = collections.Counter()
     num_negatives_by_patient = collections.Counter()
     for key, dataset in datasets.items():
-        loq = dataset['loq']
+        loq = 10 ** dataset['loq']
         for i, x in enumerate(dataset['loads']):
             # Flatten dataset-level attributes
             data.setdefault('loq', []).append(loq)
@@ -111,17 +105,17 @@ def flatten_datasets(datasets, loq_fill_value=np.nan, day_fill_value=np.nan, sta
             # Assign a consistent patient index across different samples
             patient = x['patient']
             i = patient_lookup.setdefault((key, patient), len(patient_lookup))
-            data.setdefault('idx', []).append((i + 1) if stan_idx else i)
+            data.setdefault('idx', []).append(i + 1)
             data.setdefault('patient', []).append(patient)
 
             # Add the values
-            if x['value'] is None or x['value'] < loq:
+            if x['value'] is None or x['value'] < dataset['loq']:
                 value = loq_fill_value
                 num_negatives_by_patient[i] += 1
             else:
                 value = x['value']
                 num_positives_by_patient[i] += 1
-            data.setdefault('load', []).append(value)
+            data.setdefault('load', []).append(10 ** value)
             data.setdefault('day', []).append(x.get('day', day_fill_value))
 
             num_samples_by_patient[i] += 1
@@ -130,8 +124,6 @@ def flatten_datasets(datasets, loq_fill_value=np.nan, day_fill_value=np.nan, sta
     num_patients = len(patient_lookup)
     data = {key: np.asarray(value) for key, value in data.items()}
     data.update({
-        'load10': 10 ** data['load'],
-        'loq10': 10 ** data['loq'],
         'num_samples': len(data['load']),
         'num_patients': num_patients,
         'num_samples_by_patient': dict_to_array(num_samples_by_patient,
