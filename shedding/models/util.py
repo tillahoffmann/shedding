@@ -206,13 +206,18 @@ class Model:
         return self._pystan_model
 
     MODEL_CODE = None
+    DEFAULT_DATA = {}
 
     @skip_doctest
     @ft.wraps(pystan.StanModel.sampling)
     def sampling(self, data, *args, **kwargs):
+        # Filter the data and add defaults
+        data = filter_pystan_data(data)
+        for key, value in self.DEFAULT_DATA.items():
+            data.setdefault(key, value)
         # Use only one chain by default because of a bug in pystan
         kwargs.setdefault('n_jobs', 1)
-        fit = self.pystan_model.sampling(filter_pystan_data(data), *args, **kwargs)
+        fit = self.pystan_model.sampling(data, *args, **kwargs)
         return fit
 
     @broadcast_samples
