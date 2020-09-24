@@ -46,8 +46,10 @@ class JinjaDirective(Directive):
 
         # Render the template
         context = self.app.config.jinja_context
-        for key in self.options.get('key', []):
+        keys = self.options.get('key', [])
+        for key in keys:
             context = context[key]
+        context['_jinja_key'] = keys
         template = Template(template)
         rst = template.render(**context, header_char=self.options.get('header_char', '='))
 
