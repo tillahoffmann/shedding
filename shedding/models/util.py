@@ -1,6 +1,7 @@
 import enum
 import functools as ft
 import hashlib
+import inspect
 import numbers
 import numpy as np
 import os
@@ -27,6 +28,29 @@ data {
     vector[num_samples] loq;
 }
 """
+
+
+def broadcast_samples(func):
+    """
+    Decorator to broadcast the function across samples.
+    """
+    @ft.wraps(func)
+    def _wrapper(*args, **kwargs):
+        # Use different behaviour for instance methods to account for `self`
+        if 'self' in inspect.signature(func).parameters:
+            self, x, *args = args
+            partial = ft.partial(func, self)
+        else:
+            x, *args = args
+            partial = func
+
+        if x.__class__.__name__ == 'StanFit4Model':
+            x = transpose_samples(x)
+        if isinstance(x, list):
+            return np.asarray([partial(y, *args, **kwargs) for y in x])
+        return partial(x, *args, **kwargs)
+
+    return _wrapper
 
 
 def maybe_build_model(model_code, root='.pystan', **kwargs):
@@ -113,8 +137,11 @@ def merge_data(data, *, load, **kwargs):
     """
     Merge keyword arguments with a data dictionary, including sanity checking.
     """
-    if 'load10' in data:
-        raise KeyError('use `load` instead of `load10`')
+    forbidden_keywords = ['load10', 'positive', 'num_positives_by_patient',
+                          'num_samples_by_patient', 'num_negatives_by_patient']
+    for forbidden_keyword in forbidden_keywords:
+        if forbidden_keyword in kwargs:
+            raise KeyError(f'`{forbidden_keyword}` is not an allowed keyword')
 
     data = dict(data)
     data.update(kwargs)
@@ -176,11 +203,12 @@ class Model:
     @skip_doctest
     @ft.wraps(pystan.StanModel.sampling)
     def sampling(self, data, *args, **kwargs):
-        # Use only one chain by default
+        # Use only one chain by default because of a bug in pystan
         kwargs.setdefault('n_jobs', 1)
         fit = self.pystan_model.sampling(filter_pystan_data(data), *args, **kwargs)
         return fit
 
+    @broadcast_samples
     def replicate(self, sample, data, mode=ReplicationMode.EXISTING_GROUPS, **kwargs):
         """
         Generate replicated data for a posterior sample.
@@ -201,12 +229,9 @@ class Model:
         replicate : dict
             Replicate of the data.
         """
-        if sample.__class__.__name__ == 'StanFit4Model':
-            sample = transpose_samples(sample)
-        if isinstance(sample, list):
-            return [self._replicate(x, data, mode=mode, **kwargs) for x in sample]
-        return self._replicate(sample, data, mode=mode, **kwargs)
+        raise NotImplementedError(f'{self.__class__} does not support replication')
 
+    @broadcast_samples
     def evaluate_statistic(self, sample, statistic, n=1000):
         """
         Evaluate a statistic of the model (using simulation where necessary).
@@ -222,10 +247,9 @@ class Model:
         """
         if isinstance(statistic, list):
             return {key: self._evaluate_statistic(sample, key, n) for key in statistic}
-        if isinstance(sample, list):
-            return [self._evaluate_statistic(x, statistic, n) for x in sample]
         return self._evaluate_statistic(sample, statistic, n)
 
+    @broadcast_samples
     def evaluate_observed_likelihood(self, x, data, n=1000, **kwargs):
         """
         Evaluate the likelihood of the observed data marginalised with respect to group-level
@@ -260,9 +284,6 @@ class Model:
     def _evaluate_statistic(self, sample, statistic, n):
         raise NotImplementedError(f'{self.__class__} does not support evaluation of statistics')
 
-    def _replicate(self, sample, data, mode, **kwargs):
-        raise NotImplementedError(f'{self.__class__} does not support replication')
-
     def _evaluate_observed_likelihood_contributions(self, x, data, n=1000):
         """
         Evaluate contributions to the observed data likelihood for each sample.
@@ -288,6 +309,7 @@ class Model:
 
 
 class InflationMixin:
+    @broadcast_samples
     def evaluate_observed_likelihood(self, x, data, n=1000, **kwargs):
         patient_likelihood = super(InflationMixin, self).evaluate_observed_likelihood(x, data, n,
                                                                                       **kwargs)

@@ -63,7 +63,8 @@ class LognormalModel(util.Model):
     }
     """
 
-    def _replicate(self, x, data, mode, **kwargs):
+    @util.broadcast_samples
+    def replicate(self, x, data, mode, **kwargs):
         # Sample new group-level parameters if required
         if mode == util.ReplicationMode.NEW_GROUPS:
             patient_mean = np.random.lognormal(x['population_mean'], x['population_scale'],
@@ -156,7 +157,8 @@ class LognormalInflatedModel(util.InflationMixin, LognormalModel):
     }
     """
 
-    def _replicate(self, x, data, mode, **kwargs):
+    @util.broadcast_samples
+    def replicate(self, x, data, mode, **kwargs):
         if mode == util.ReplicationMode.NEW_GROUPS:
             # Generate group-level means and indicators
             patient_mean = np.random.lognormal(x['population_mean'], x['population_scale'],

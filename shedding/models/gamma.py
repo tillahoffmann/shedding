@@ -52,7 +52,8 @@ class GammaModel(util.Model):
     }
     """
 
-    def _replicate(self, x, data, mode, **kwargs):
+    @util.broadcast_samples
+    def replicate(self, x, data, mode, **kwargs):
         if mode == util.ReplicationMode.NEW_GROUPS:
             patient_mean = np.random.gamma(x['population_shape'], scale=1 / x['population_scale'],
                                            size=data['num_patients'])
@@ -152,7 +153,8 @@ class GammaInflatedModel(util.InflationMixin, GammaModel):
     }
     """
 
-    def _replicate(self, x, data, mode, **kwargs):
+    @util.broadcast_samples
+    def replicate(self, x, data, mode, **kwargs):
         if mode == util.ReplicationMode.NEW_GROUPS:
             # Generate the patient mean
             patient_mean = np.random.gamma(x['population_shape'], scale=1 / x['population_scale'],
