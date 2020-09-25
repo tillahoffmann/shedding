@@ -21,7 +21,14 @@ class GammaModel(util.Model):
     """
     Hierarchical gamma model with random effects for each patient.
     """
-    MODEL_CODE = util.MODEL_BOILERPLATE + """
+    MODEL_CODE = """
+    data {
+        {{data}}
+
+        // Prior hyperparameters
+        real<upper=0> prior_population_scale_pow;
+    }
+
     parameters {
         // Population level parameters
         real<lower=0> population_shape;
@@ -49,8 +56,14 @@ class GammaModel(util.Model):
         // Sample individual parameters for each person
         target += gamma_lpdf(patient_mean | population_shape, population_scale);
         target += sum(sample_contrib_);
+
+        // Monomial priors for the scale parameter (defaults to log-uniform Jeffrey's prior)
+        target += prior_population_scale_pow * log(population_scale);
     }
     """
+    DEFAULT_DATA = {
+        'prior_population_scale_pow': -1,
+    }
 
     @util.broadcast_samples
     def replicate(self, x, data, mode, **kwargs):
@@ -91,7 +104,14 @@ class GammaInflatedModel(util.InflationMixin, GammaModel):
     Hierarchical gamma model with random effects for each patient and a binary shedding indicator to
     support zero-inflated results.
     """
-    MODEL_CODE = util.MODEL_BOILERPLATE + """
+    MODEL_CODE = """
+    data {
+        {{data}}
+
+        // Prior hyperparameters
+        real<upper=0> prior_population_scale_pow;
+    }
+
     parameters {
         // Proportion of individuals that are positive in stool
         real<lower=0, upper=1> rho;
@@ -131,25 +151,12 @@ class GammaInflatedModel(util.InflationMixin, GammaModel):
     }
 
     model {
-        // Iterate over patients and ...
-        for (i in 1:num_patients) {
-            // ... deal with ones that have zero-only observations
-            if (num_positives_by_patient[i] == 0) {
-                target += log_sum_exp(
-                    // This patient truly doesn't shed virus
-                    bernoulli_lpmf(0 | rho),
-                    // This patient sheds virus, but not enough to have been detected
-                    bernoulli_lpmf(1 | rho) + patient_contrib_[i]
-                );
-            }
-            // ... deal with ones that have positive and negative observations
-            else {
-                target += bernoulli_lpmf(1 | rho) + patient_contrib_[i];
-            }
-        }
+        {{patient_contrib}}
 
         // Sample individual parameters for each person
         target += gamma_lpdf(patient_mean | population_shape, population_scale);
+        // Monomial priors for the scale parameter (defaults to log-uniform Jeffrey's prior)
+        target += prior_population_scale_pow * log(population_scale);
     }
     """
 

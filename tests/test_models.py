@@ -13,7 +13,7 @@ def model(request):
 
 
 def test_model_code(model):
-    pystan.api.stanc(model_code=model.MODEL_CODE)
+    pystan.api.stanc(model_code=model.model_code)
 
 
 @pytest.fixture

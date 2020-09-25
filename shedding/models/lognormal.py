@@ -28,7 +28,15 @@ class LognormalModel(util.Model):
     """
     Hierarchical lognormal model with random effects for each patient.
     """
-    MODEL_CODE = util.MODEL_BOILERPLATE + """
+    MODEL_CODE = """
+    data {
+        {{data}}
+
+        // Prior hyperparameters
+        real<upper=0> prior_population_scale_pow;
+        real<upper=0> prior_patient_scale_pow;
+    }
+
     parameters {
         // Population level parameters
         real population_mean;
@@ -60,8 +68,15 @@ class LognormalModel(util.Model):
         target += lognormal_lpdf(patient_mean | population_mean, population_scale);
         // ... and the contributions from samples
         target += sum(sample_contrib_);
+        // Monomial priors for the scale parameters (defaults to log-uniform Jeffrey's prior)
+        target += prior_population_scale_pow * log(population_scale);
+        target += prior_patient_scale_pow * log(patient_scale);
     }
     """
+    DEFAULT_DATA = {
+        'prior_population_scale_pow': -1,
+        'prior_patient_scale_pow': -1,
+    }
 
     @util.broadcast_samples
     def replicate(self, x, data, mode, **kwargs):
@@ -105,7 +120,15 @@ class LognormalInflatedModel(util.InflationMixin, LognormalModel):
     Hierarchical lognormal model with random effects for each patient and a binary shedding
     indicator to support zero-inflated results.
     """
-    MODEL_CODE = util.MODEL_BOILERPLATE + """
+    MODEL_CODE = """
+    data {
+        {{data}}
+
+        // Prior hyperparameters
+        real<upper=0> prior_population_scale_pow;
+        real<upper=0> prior_patient_scale_pow;
+    }
+
     parameters {
         // Proportion of individuals that are positive in stool
         real<lower=0, upper=1> rho;
@@ -135,25 +158,13 @@ class LognormalInflatedModel(util.InflationMixin, LognormalModel):
     }
 
     model {
-        // Iterate over patients and ...
-        for (i in 1:num_patients) {
-            // ... deal with ones that have zero-only observations
-            if (num_positives_by_patient[i] == 0) {
-                target += log_sum_exp(
-                    // This patient truly doesn't shed virus
-                    bernoulli_lpmf(0 | rho),
-                    // This patient sheds virus, but not enough to have been detected
-                    bernoulli_lpmf(1 | rho) + patient_contrib_[i]
-                );
-            }
-            // ... deal with ones that have positive and negative observations
-            else {
-                target += bernoulli_lpmf(1 | rho) + patient_contrib_[i];
-            }
-        }
+        {{patient_contrib}}
 
         // Sample individual parameters for each person.
         target += lognormal_lpdf(patient_mean | population_mean, population_scale);
+        // Monomial priors for the scale parameters (defaults to log-uniform Jeffrey's prior)
+        target += prior_population_scale_pow * log(population_scale);
+        target += prior_patient_scale_pow * log(patient_scale);
     }
     """
 

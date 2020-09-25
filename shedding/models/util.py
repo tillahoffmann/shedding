@@ -2,6 +2,7 @@ import enum
 import functools as ft
 import hashlib
 import inspect
+from jinja2 import Template
 import numbers
 import numpy as np
 import os
@@ -11,23 +12,41 @@ from scipy import special
 from ..util import skip_doctest, softmax
 
 
-MODEL_BOILERPLATE = """
-data {
-    // Information about samples and associations between samples and patients.
-    int<lower=0> num_patients;
-    int<lower=0> num_samples;
-    int idx[num_samples];
+MODEL_BOILERPLATE = {
+    'data': """
+        // Information about samples and associations between samples and patients.
+        int<lower=0> num_patients;
+        int<lower=0> num_samples;
+        int idx[num_samples];
 
-    // Information about number of positives and negatives for each patient.
-    int<lower=0> num_samples_by_patient[num_patients];
-    int<lower=0> num_positives_by_patient[num_patients];
-    int<lower=0> num_negatives_by_patient[num_patients];
+        // Information about number of positives and negatives for each patient.
+        int<lower=0> num_samples_by_patient[num_patients];
+        int<lower=0> num_positives_by_patient[num_patients];
+        int<lower=0> num_negatives_by_patient[num_patients];
 
-    // Data on the natural scale.
-    vector[num_samples] load;
-    vector[num_samples] loq;
+        // Data on the natural scale.
+        vector[num_samples] load;
+        vector[num_samples] loq;
+    """,
+    'patient_contrib': """
+        // Iterate over patients and ...
+        for (i in 1:num_patients) {
+            // ... deal with ones that have zero-only observations
+            if (num_positives_by_patient[i] == 0) {
+                target += log_sum_exp(
+                    // This patient truly doesn't shed virus
+                    bernoulli_lpmf(0 | rho),
+                    // This patient sheds virus, but not enough to have been detected
+                    bernoulli_lpmf(1 | rho) + patient_contrib_[i]
+                );
+            }
+            // ... deal with ones that have positive and negative observations
+            else {
+                target += bernoulli_lpmf(1 | rho) + patient_contrib_[i];
+            }
+        }
+    """,
 }
-"""
 
 
 def broadcast_samples(func):
@@ -83,6 +102,9 @@ def maybe_build_model(model_code, root='.pystan', **kwargs):
         os.makedirs(root, exist_ok=True)
         with open(filename, 'wb') as fp:
             pickle.dump(model, fp)
+        # Also dump the stan code for reference
+        with open(filename.replace('.pkl', '.stan'), 'w') as fp:
+            fp.write(model_code)
         return model
 
 
@@ -195,17 +217,34 @@ class Model:
         model_code = model_code or self.MODEL_CODE
         if not model_code:
             raise ValueError("missing model code")
+
+        # Render the template, substituting boilerplate
+        template = Template(model_code)
+        self.model_code = template.render(**MODEL_BOILERPLATE)
+
         kwargs.setdefault('model_name', self.__class__.__name__)
-        self.pystan_model = maybe_build_model(model_code, **kwargs)
+        self._kwargs = kwargs
+        self._pystan_model = None
+
+    @property
+    def pystan_model(self):
+        if self._pystan_model is None:
+            self._pystan_model = maybe_build_model(self.model_code, **self._kwargs)
+        return self._pystan_model
 
     MODEL_CODE = None
+    DEFAULT_DATA = {}
 
     @skip_doctest
     @ft.wraps(pystan.StanModel.sampling)
     def sampling(self, data, *args, **kwargs):
+        # Filter the data and add defaults
+        data = filter_pystan_data(data)
+        for key, value in self.DEFAULT_DATA.items():
+            data.setdefault(key, value)
         # Use only one chain by default because of a bug in pystan
         kwargs.setdefault('n_jobs', 1)
-        fit = self.pystan_model.sampling(filter_pystan_data(data), *args, **kwargs)
+        fit = self.pystan_model.sampling(data, *args, **kwargs)
         return fit
 
     @broadcast_samples
