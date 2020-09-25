@@ -9,6 +9,7 @@ setup(
         'numpy',
         'scipy',
         'pystan<3',
+        'jinja2',
     ],
     extras_require={
         'tests': [
