@@ -135,8 +135,8 @@ def transpose_samples(fit, pars=None):
 
     Parameters
     ----------
-    fit : pystan.StanFit4Model
-        Fit obtained from a `pystan` model.
+    fit : pystan.StanFit4Model or dict[str,list]
+        Fit obtained from a `pystan` model or dictionary of parameter samples.
     pars : list[str]
         Parameter names to extract; defaults to all parameters.
 
@@ -145,9 +145,10 @@ def transpose_samples(fit, pars=None):
     samples : list[dict]
         Sequence of samples, each represented by a dictionary.
     """
-    mapping = fit.extract(pars)
+    if fit.__class__.__name__ == 'StanFit4Model':
+        fit = fit.extract(pars)
     samples = []
-    for key, values in mapping.items():
+    for key, values in fit.items():
         for i, value in enumerate(values):
             if not i < len(samples):
                 samples.append({})
