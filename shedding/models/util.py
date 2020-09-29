@@ -272,7 +272,7 @@ class Model:
         raise NotImplementedError(f'{self.__class__} does not support replication')
 
     @broadcast_samples
-    def evaluate_statistic(self, sample, statistic, n=1000):
+    def evaluate_statistic(self, sample, statistic, n=1000, **kwargs):
         """
         Evaluate a statistic of the model (using simulation where necessary).
 
@@ -321,10 +321,10 @@ class Model:
             patient_likelihood[idx] += likelihood
         return patient_likelihood
 
-    def _evaluate_statistic(self, sample, statistic, n):
+    def _evaluate_statistic(self, sample, statistic, n, **kwargs):
         raise NotImplementedError(f'{self.__class__} does not support evaluation of statistics')
 
-    def _evaluate_observed_likelihood_contributions(self, x, data, n=1000):
+    def _evaluate_observed_likelihood_contributions(self, x, data, n=1000, **kwargs):
         """
         Evaluate contributions to the observed data likelihood for each sample.
 
@@ -364,7 +364,7 @@ class InflationMixin:
         )
         return patient_likelihood
 
-    def _evaluate_statistic(self, x, statistic, n):
+    def _evaluate_statistic(self, x, statistic, n, **kwargs):
         if statistic == 'mean':
             return x['rho'] * super(InflationMixin, self)._evaluate_statistic(x, statistic, n)
         raise ValueError(statistic)

@@ -84,13 +84,13 @@ class WeibullModel(util.Model):
         load = weibull_rng(x['patient_shape'], patient_scale, data['num_samples'])
         return util.merge_data(data, load=load, patient_mean=patient_mean)
 
-    def _evaluate_statistic(self, x, statistic, n):
+    def _evaluate_statistic(self, x, statistic, n, **kwargs):
         if statistic == 'mean':
             return x['population_scale'] * special.gamma(1 / x['population_shape']) / \
                 x['population_shape']
         raise ValueError
 
-    def _evaluate_observed_likelihood_contributions(self, x, data, n=1000):
+    def _evaluate_observed_likelihood_contributions(self, x, data, n=1000, **kwargs):
         patient_mean = weibull_rng(x['population_shape'], x['population_scale'],
                                    (n, data['num_patients']))
         patient_scale = patient_mean / special.gamma(1 + 1 / x['patient_shape'])

@@ -51,7 +51,7 @@ class LognormalModel(util.Model):
         vector[num_samples] sample_contrib_;
         // Iterate over the samples and distinguish between...
         for (i in 1:num_samples) {
-            real mu = log(patient_mean[idx[i]]);
+            real mu = log(patient_mean[idx[i]]) - patient_scale ^ 2 / 2;
             // ... a quantitative observation ...
             if (load[i] > loq[i]) {
                 sample_contrib_[i] = lognormal_lpdf(load[i] | mu, patient_scale);
@@ -88,28 +88,27 @@ class LognormalModel(util.Model):
             patient_mean = x['patient_mean']
 
         # Sample viral loads
-        mu = np.log(np.repeat(patient_mean, data['num_samples_by_patient']))
+        mu = np.log(np.repeat(patient_mean, data['num_samples_by_patient'])) - \
+            x['patient_scale'] ** 2 / 2
         load = np.random.lognormal(mu, x['patient_scale'], data['num_samples'])
         return util.merge_data(data, load=load, patient_mean=patient_mean)
 
-    def _evaluate_statistic(self, x, statistic, n):
-        mu = x['population_mean']
-        sigma = np.sqrt(x['population_scale'] ** 2 + x['patient_scale'] ** 2)
+    def _evaluate_statistic(self, x, statistic, n, **kwargs):
         if statistic == 'mean':
-            return lognormal_mean(mu, sigma)
+            return lognormal_mean(x['population_mean'], x['population_scale'])
         raise ValueError(statistic)
 
-    def _evaluate_observed_likelihood_contributions(self, x, data, n, analytic=True):
+    def _evaluate_observed_likelihood_contributions(self, x, data, n, analytic=True, **kwargs):
         if analytic:
-            sigma = np.sqrt(x['population_scale'] ** 2 + x['patient_scale'] ** 2)
-            lpdf = lognormal_lpdf(data['load'], x['population_mean'], sigma)[None]
-            lcdf = lognormal_lcdf(data['loq'], x['population_mean'], sigma)[None]
+            lpdf = lognormal_lpdf(data['load'], x['population_mean'], x['population_scale'])[None]
+            lcdf = lognormal_lcdf(data['loq'], x['population_mean'], x['population_scale'])[None]
         else:
             # Sample the patient-level variables
             patient_mean = np.random.lognormal(x['population_mean'], x['population_scale'],
                                                (n, data['num_patients']))
             # Evaluate the likelihood contributions for each sample given those means
-            mu = np.repeat(np.log(patient_mean), data['num_samples_by_patient'], axis=-1)
+            mu = np.repeat(np.log(patient_mean), data['num_samples_by_patient'], axis=-1) - \
+                x['patient_scale'] ** 2 / 2
             lpdf = lognormal_lpdf(data['load'], mu, x['patient_scale'])
             lcdf = lognormal_lcdf(data['loq'], mu, x['patient_scale'])
         return lpdf, lcdf
@@ -148,7 +147,7 @@ class LognormalInflatedModel(util.InflationMixin, LognormalModel):
         // Iterate over samples
         for (j in 1:num_samples) {
             int i = idx[j];
-            real mu = log(patient_mean[i]);
+            real mu = log(patient_mean[i]) - patient_scale ^ 2 / 2;
             if (load[j] > loq[j]) {
                 patient_contrib_[i] += lognormal_lpdf(load[j] | mu, patient_scale);
             } else {
@@ -180,7 +179,8 @@ class LognormalInflatedModel(util.InflationMixin, LognormalModel):
             z = util.sample_indicators(x, data)
             patient_mean = x['patient_mean']
 
-        mu = np.log(np.repeat(patient_mean, data['num_samples_by_patient']))
+        mu = np.log(np.repeat(patient_mean, data['num_samples_by_patient'])) - \
+            x['patient_scale'] ** 2 / 2
         load = np.random.lognormal(mu, x['patient_scale'])
         load = np.where(np.repeat(z, data['num_samples_by_patient']), load, data['loq'] / 10)
 

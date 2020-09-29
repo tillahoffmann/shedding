@@ -78,7 +78,7 @@ class GammaModel(util.Model):
 
         return util.merge_data(data, load=load, patient_mean=patient_mean)
 
-    def _evaluate_statistic(self, x, statistic, n):
+    def _evaluate_statistic(self, x, statistic, n, **kwargs):
         if statistic == 'mean':
             return x['population_shape'] / x['population_scale']
         elif statistic in ('var', 'std'):
@@ -89,7 +89,7 @@ class GammaModel(util.Model):
             return np.sqrt(var)
         raise ValueError(statistic)
 
-    def _evaluate_observed_likelihood_contributions(self, x, data, n=1000):
+    def _evaluate_observed_likelihood_contributions(self, x, data, n=1000, **kwargs):
         patient_mean = np.random.gamma(x['population_shape'], 1 / x['population_scale'],
                                        (n, data['num_patients']))
         patient_scale = np.repeat(x['patient_shape'] / patient_mean, data['num_samples_by_patient'],
