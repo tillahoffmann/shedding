@@ -100,8 +100,9 @@ class LognormalModel(util.Model):
 
     def _evaluate_observed_likelihood_contributions(self, x, data, n, analytic=True, **kwargs):
         if analytic:
-            lpdf = lognormal_lpdf(data['load'], x['population_mean'], x['population_scale'])[None]
-            lcdf = lognormal_lcdf(data['loq'], x['population_mean'], x['population_scale'])[None]
+            mu = x['population_mean'] - x['patient_scale'] ** 2 / 2
+            lpdf = lognormal_lpdf(data['load'], mu, x['population_scale'])[None]
+            lcdf = lognormal_lcdf(data['loq'], mu, x['population_scale'])[None]
         else:
             # Sample the patient-level variables
             patient_mean = np.random.lognormal(x['population_mean'], x['population_scale'],
