@@ -39,7 +39,7 @@ class LognormalModel(util.Model):
 
     parameters {
         // Population level parameters
-        real population_mean;
+        real population_loc;
         real<lower=0> population_scale;
 
         // Individual level parameters
@@ -65,7 +65,7 @@ class LognormalModel(util.Model):
 
     model {
         // Sample individual parameters for each person ...
-        target += lognormal_lpdf(patient_mean | population_mean, population_scale);
+        target += lognormal_lpdf(patient_mean | population_loc, population_scale);
         // ... and the contributions from samples
         target += sum(sample_contrib_);
         // Monomial priors for the scale parameters (defaults to log-uniform Jeffrey's prior)
@@ -82,7 +82,7 @@ class LognormalModel(util.Model):
     def replicate(self, x, data, mode, **kwargs):
         # Sample new group-level parameters if required
         if mode == util.ReplicationMode.NEW_GROUPS:
-            patient_mean = np.random.lognormal(x['population_mean'], x['population_scale'],
+            patient_mean = np.random.lognormal(x['population_loc'], x['population_scale'],
                                                data['num_patients'])
         else:
             patient_mean = x['patient_mean']
@@ -95,17 +95,17 @@ class LognormalModel(util.Model):
 
     def _evaluate_statistic(self, x, statistic, n, **kwargs):
         if statistic == 'mean':
-            return lognormal_mean(x['population_mean'], x['population_scale'])
+            return lognormal_mean(x['population_loc'], x['population_scale'])
         raise ValueError(statistic)
 
     def _evaluate_observed_likelihood_contributions(self, x, data, n, analytic=True, **kwargs):
         if analytic:
-            mu = x['population_mean'] - x['patient_scale'] ** 2 / 2
+            mu = x['population_loc'] - x['patient_scale'] ** 2 / 2
             lpdf = lognormal_lpdf(data['load'], mu, x['population_scale'])[None]
             lcdf = lognormal_lcdf(data['loq'], mu, x['population_scale'])[None]
         else:
             # Sample the patient-level variables
-            patient_mean = np.random.lognormal(x['population_mean'], x['population_scale'],
+            patient_mean = np.random.lognormal(x['population_loc'], x['population_scale'],
                                                (n, data['num_patients']))
             # Evaluate the likelihood contributions for each sample given those means
             mu = np.repeat(np.log(patient_mean), data['num_samples_by_patient'], axis=-1) - \
@@ -134,7 +134,7 @@ class LognormalInflatedModel(util.InflationMixin, LognormalModel):
         real<lower=0, upper=1> rho;
 
         // Population level parameters
-        real population_mean;
+        real population_loc;
         real<lower=0> population_scale;
 
         // Individual level parameters
@@ -161,7 +161,7 @@ class LognormalInflatedModel(util.InflationMixin, LognormalModel):
         {{patient_contrib}}
 
         // Sample individual parameters for each person.
-        target += lognormal_lpdf(patient_mean | population_mean, population_scale);
+        target += lognormal_lpdf(patient_mean | population_loc, population_scale);
         // Monomial priors for the scale parameters (defaults to log-uniform Jeffrey's prior)
         target += prior_population_scale_pow * log(population_scale);
         target += prior_patient_scale_pow * log(patient_scale);
@@ -172,7 +172,7 @@ class LognormalInflatedModel(util.InflationMixin, LognormalModel):
     def replicate(self, x, data, mode, **kwargs):
         if mode == util.ReplicationMode.NEW_GROUPS:
             # Generate group-level means and indicators
-            patient_mean = np.random.lognormal(x['population_mean'], x['population_scale'],
+            patient_mean = np.random.lognormal(x['population_loc'], x['population_scale'],
                                                data['num_patients'])
             z = np.random.uniform(0, 1, data['num_patients']) < x['rho']
         else:
