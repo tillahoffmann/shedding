@@ -321,6 +321,25 @@ class Model:
             patient_likelihood[idx] += likelihood
         return patient_likelihood
 
+    @broadcast_samples
+    def rvs(self, x, size=None):
+        """
+        Draw a sample from the posterior predictive distribution.
+
+        Parameters
+        ----------
+        x : dict
+            Posterior sample.
+        size : int or tuple[int]
+            Size of the sample to draw.
+
+        Returns
+        -------
+        sample : ndarray[size]
+            Sample drawn from the posterior predictive distribution.
+        """
+        raise NotImplementedError(f'{self.__class__} does not support posterior sampling')
+
     def _evaluate_statistic(self, sample, statistic, n, **kwargs):
         raise NotImplementedError(f'{self.__class__} does not support evaluation of statistics')
 
@@ -363,6 +382,13 @@ class InflationMixin:
             patient_likelihood
         )
         return patient_likelihood
+
+    @broadcast_samples
+    def rvs(self, x, size=None):
+        # Draw a sample from the non-inflated model
+        sample = super(InflationMixin, self).rvs(x, size)
+        # Account for zero-inflation
+        return np.where(np.random.uniform(size=np.shape(sample)) < x['rho'], sample, np.nan)
 
     def _evaluate_statistic(self, x, statistic, n, **kwargs):
         if statistic == 'mean':

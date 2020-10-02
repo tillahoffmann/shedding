@@ -114,6 +114,11 @@ class LognormalModel(util.Model):
             lcdf = lognormal_lcdf(data['loq'], mu, x['patient_scale'])
         return lpdf, lcdf
 
+    @util.broadcast_samples
+    def rvs(self, x, size=None):
+        patient_loc = np.random.normal(x['population_loc'], x['population_scale'], size)
+        return np.random.lognormal(patient_loc, x['patient_scale'], np.shape(patient_loc))
+
 
 class LognormalInflatedModel(util.InflationMixin, LognormalModel):
     """

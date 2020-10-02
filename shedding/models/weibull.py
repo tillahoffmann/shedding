@@ -71,6 +71,10 @@ class WeibullModel(util.Model):
         'prior_population_scale_pow': -1,
     }
 
+    def _evaluate_scale(self, shape, mean):
+        log_scale = np.log(mean) - special.gammaln(1 + 1 / shape)
+        return np.exp(log_scale)
+
     @util.broadcast_samples
     def replicate(self, x, data, mode, **kwargs):
         if mode == util.ReplicationMode.NEW_GROUPS:
@@ -79,7 +83,7 @@ class WeibullModel(util.Model):
         else:
             patient_mean = x['patient_mean']
 
-        patient_scale = patient_mean / special.gamma(1 + 1 / x['patient_shape'])
+        patient_scale = self._evaluate_scale(x['patient_shape'], patient_mean)
         patient_scale = np.repeat(patient_scale, data['num_samples_by_patient'])
         load = weibull_rng(x['patient_shape'], patient_scale, data['num_samples'])
         return util.merge_data(data, load=load, patient_mean=patient_mean)
@@ -93,11 +97,17 @@ class WeibullModel(util.Model):
     def _evaluate_observed_likelihood_contributions(self, x, data, n=1000, **kwargs):
         patient_mean = weibull_rng(x['population_shape'], x['population_scale'],
                                    (n, data['num_patients']))
-        patient_scale = patient_mean / special.gamma(1 + 1 / x['patient_shape'])
+        patient_scale = self._evaluate_scale(x['patient_shape'], patient_mean)
         patient_scale = np.repeat(patient_scale, data['num_samples_by_patient'], axis=-1)
         lpdf = weibull_lpdf(data['load'], x['patient_shape'], patient_scale)
         lcdf = weibull_lcdf(data['loq'], x['patient_shape'], patient_scale)
         return lpdf, lcdf
+
+    @util.broadcast_samples
+    def rvs(self, x, size=None):
+        patient_mean = weibull_rng(x['population_shape'], x['population_scale'], size)
+        patient_scale = self._evaluate_scale(x['patient_shape'], patient_mean)
+        return weibull_rng(x['patient_shape'], patient_scale, np.shape(patient_scale))
 
 
 class WeibullInflatedModel(util.InflationMixin, WeibullModel):

@@ -91,3 +91,11 @@ def test_weibull_pdf_cdf():
     scale = 5
     dist = stats.weibull_min(shape, scale=scale)
     _test_dist_pdf_cdf(dist, shedding.weibull_lpdf, shedding.weibull_lcdf, shape, scale)
+
+
+def test_rvs(model, hyperparameters):
+    sample = model.rvs(hyperparameters, 100)
+    assert np.shape(sample) == (100,)
+    if 'Inflated' in model.__class__.__name__:
+        sample = sample[np.isfinite(sample)]
+    np.testing.assert_array_less(0, sample)

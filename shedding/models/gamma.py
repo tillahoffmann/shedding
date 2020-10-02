@@ -98,6 +98,12 @@ class GammaModel(util.Model):
         lcdf = gamma_lcdf(data['loq'], x['patient_shape'], patient_scale)
         return lpdf, lcdf
 
+    @util.broadcast_samples
+    def rvs(self, x, size=None):
+        patient_mean = np.random.gamma(x['population_shape'], 1 / x['population_scale'], size)
+        patient_scale = x['patient_shape'] / patient_mean
+        return np.random.gamma(x['patient_shape'], 1 / patient_scale, np.shape(patient_scale))
+
 
 class GammaInflatedModel(util.InflationMixin, GammaModel):
     """
