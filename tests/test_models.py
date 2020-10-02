@@ -19,7 +19,7 @@ def test_model_code(model):
 @pytest.fixture
 def hyperparameters(model):
     if isinstance(model, shedding.LognormalModel):
-        params = {'patient_scale': 1, 'population_scale': 1, 'population_mean': 1}
+        params = {'patient_scale': 1, 'population_scale': 1, 'population_loc': 1}
     elif isinstance(model, shedding.GammaModel):
         params = {'patient_shape': 1, 'population_scale': 1e-5, 'population_shape': 1}
     elif isinstance(model, shedding.WeibullModel):
