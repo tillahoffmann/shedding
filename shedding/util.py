@@ -1,8 +1,11 @@
+import importlib
+import inspect
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 import numbers
 import numpy as np
 import re
+from scipy import stats
 import sys
 
 
@@ -95,7 +98,7 @@ def qq_plot(y, dist, yerr=None, ax=None, **kwargs):
     ax :
         Axes to plot into.
     **kwargs : dict
-        Additional arguments passed to `ax.errorbar`.
+        Keyword arguments passed to `ax.errorbar`.
     """
     ax = ax or plt.gca()
     kwargs.setdefault('ls', 'none')
@@ -129,7 +132,7 @@ def replication_percentile_plot(data, replicates, key=None, percentiles=10, ax=N
     ax :
         Axes to plot into.
     **kwargs : dict
-        Additional arguments passed to `ax.violinplot`.
+        Keyword arguments passed to `ax.violinplot`.
     """
     ax = ax or plt.gca()
     if isinstance(percentiles, numbers.Number):
@@ -158,3 +161,96 @@ def softmax(x, axis=None):
     """
     proba = np.exp(x - np.max(x, axis=axis, keepdims=True))
     return proba / np.sum(proba, axis=axis, keepdims=True)
+
+
+def reload(module, predicate=None, exclude=None):
+    """
+    Reload modules recursively depth-first if predicate returns `True`.
+
+    Parameters
+    ----------
+    module :
+        Root module from which to start the depth-first recursion.
+    predicate : callable
+        Predicate to determine whether the module should be reloaded.
+    exclude : list
+        List of modules to exclude, used to ensure modules are only reloaded once.
+    """
+    if predicate is None:
+        predicate = lambda x: True  # noqa: E731
+    if exclude is None:
+        exclude = []
+    for _, submodule in inspect.getmembers(module, inspect.ismodule):
+        if predicate(submodule) and submodule not in exclude:
+            reload(submodule, predicate, exclude)
+    print(f'reloading {module}...')
+    importlib.reload(module)
+    exclude.append(module)
+
+
+def plot_kde(kde, xmin=None, xmax=None, factor=3, numlin=50, ax=None, **kwargs):
+    """
+    Plot a kernel density estimate.
+
+    Parameters
+    ----------
+    xmin : float
+        Lower limit of the kernel density estimate.
+    xmax : float
+        Upper limit of the kernel density estimate.
+    factor : float
+        Multiplicative factor for the kernel density estimate standard deviation to extend the range
+        of the kernel density estimate.
+    numlin : int
+        Number of points at which to evaluate the kernel density estimate.
+    ax :
+        Axes to plot into.
+    **kwargs : dict
+        Keyword arguments passed to `ax.plot`.
+    """
+    ax = ax or plt.gca()
+    if not isinstance(kde, stats.gaussian_kde):
+        kde = stats.gaussian_kde(kde)
+    scale = np.squeeze(np.sqrt(kde.covariance))
+    if xmin is None:
+        xmin = kde.dataset.min()
+    if xmax is None:
+        xmax = kde.dataset.max()
+    lin = np.linspace(xmin - factor * scale, xmax + factor * scale, numlin)
+    return ax.plot(lin, kde(lin), **kwargs)
+
+
+def plot_replication_summary(data, replicates_by_model, target=None, ax=None, **kwargs):
+    """
+    Plot kernel density estimates of data and a set of replicates.
+
+    Parameters
+    ----------
+    data :
+        Data used to generate replicates.
+    replicates_by_model : dict[str, list] or list
+        List of replicates keyed by model name or a list of replicates for a single model.
+    target : callable
+        Function to extract summary statistics from the data or replicates.
+    ax :
+        Axes to plot into.
+    **kwargs : dict
+        Keyword arguments passed to `plot_kde`.
+    """
+    ax = ax or plt.gca()
+    # Plot the reference
+    reference = target(data)
+    ax.axvline(reference, color='k', ls=':')
+
+    if not isinstance(replicates_by_model, dict):
+        replicates_by_model = {'default': replicates_by_model}
+
+    # Plot the replicates
+    for key, replicates in replicates_by_model.items():
+        x = np.asarray([target(r) for r in replicates])
+        plot_kde(stats.gaussian_kde(x), ax=ax, label=key, **kwargs)
+        pval = np.mean(x < reference)
+        pval = min(pval, 1 - pval)
+        print(f'{key} posterior p-value: {pval:.3f}')
+
+    ax.axvline(reference, color='k', ls=':')
