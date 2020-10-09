@@ -1,3 +1,4 @@
+import collections
 import importlib
 import inspect
 import matplotlib as mpl
@@ -5,7 +6,7 @@ from matplotlib import pyplot as plt
 import numbers
 import numpy as np
 import re
-from scipy import stats
+from scipy import stats, special
 import sys
 
 
@@ -281,3 +282,12 @@ def logmeanexp(x, axis=None, **kwargs):
     else:
         size = np.size(x, axis)
     return lse - np.log(size)
+
+
+def label_axes(axes, x=0.05, y=0.95, va='top', offset=0, **kwargs):
+    """
+    Attach alphabetical labels to a sequence of axes.
+    """
+    for i, ax in enumerate(np.ravel(axes)):
+        char = bytes([int.from_bytes(b'a', 'little') + i + offset]).decode()
+        ax.text(x, y, '(%s)' % char, va=va, transform=ax.transAxes, **kwargs)
