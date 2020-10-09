@@ -12,4 +12,5 @@
 * Patients: {{patients.get('n', 'unknown')}} (positive: {{patients.get('positive', 'unknown')}}, negative: {{patients.get('negative', 'unknown')}})
 * Samples: {{samples.get('n', 'unknown')}} (positive: {{samples.get('positive', 'unknown')}}, negative: {{samples.get('negative', 'unknown')}})
 * Assay: {{assay}}
+* Level of quantification: {{loq or 'unknown'}} log10 gc per mL
 * `View data <https://github.com/tillahoffmann/shedding/blob/master/publications/{{_jinja_key}}/{{_jinja_key}}.json>`__
