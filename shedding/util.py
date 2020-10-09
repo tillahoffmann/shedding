@@ -254,3 +254,30 @@ def plot_replication_summary(data, replicates_by_model, target=None, ax=None, **
         print(f'{key} posterior p-value: {pval:.3f}')
 
     ax.axvline(reference, color='k', ls=':')
+
+
+def logmeanexp(x, axis=None, **kwargs):
+    """
+    Evaluate the logarithm of the mean of exponentiated values in a numerically stable fashion.
+
+    Parameters
+    ----------
+    x : array_like
+        Input array.
+    axis : None or int or tuple[int], optional
+        Axis or axes over which the mean is taken. By default `axis` is None, and all elements are
+        averaged.
+    **kwargs : dict
+        Keyword arguments passed to `scipy.special.logsumexp`.
+
+    Returns
+    -------
+    y : ndarray
+        `np.log(np.mean(np.exp(a)))` calculated in a numerically more stable way.
+    """
+    lse = special.logsumexp(x, axis, **kwargs)
+    if isinstance(axis, collections.abc.Iterable):
+        size = np.prod([np.size(x, a) for a in axis])
+    else:
+        size = np.size(x, axis)
+    return lse - np.log(size)
