@@ -43,7 +43,7 @@ class LognormalModel(util.Model):
         real<lower=0> population_scale;
 
         // Individual level parameters
-        vector<lower=0>[num_patients] patient_mean;
+        vector[num_patients] patient_loc;
         real<lower=0> patient_scale;
     }
 
@@ -51,7 +51,7 @@ class LognormalModel(util.Model):
         vector[num_samples] sample_contrib_;
         // Iterate over the samples and distinguish between...
         for (i in 1:num_samples) {
-            real mu = log(patient_mean[idx[i]]) - patient_scale ^ 2 / 2;
+            real mu = patient_loc[idx[i]] - patient_scale ^ 2 / 2;
             // ... a quantitative observation ...
             if (load[i] > loq[i]) {
                 sample_contrib_[i] = lognormal_lpdf(load[i] | mu, patient_scale);
@@ -65,7 +65,7 @@ class LognormalModel(util.Model):
 
     model {
         // Sample individual parameters for each person ...
-        target += lognormal_lpdf(patient_mean | population_loc, population_scale);
+        target += normal_lpdf(patient_loc | population_loc, population_scale);
         // ... and the contributions from samples
         target += sum(sample_contrib_);
         // Monomial priors for the scale parameters (defaults to log-uniform Jeffrey's prior)
@@ -82,41 +82,36 @@ class LognormalModel(util.Model):
     def replicate(self, x, data, mode, **kwargs):
         # Sample new group-level parameters if required
         if mode == util.ReplicationMode.NEW_GROUPS:
-            patient_mean = np.random.lognormal(x['population_loc'], x['population_scale'],
-                                               data['num_patients'])
+            patient_loc = np.random.normal(x['population_loc'], x['population_scale'],
+                                           data['num_patients'])
         else:
-            patient_mean = x['patient_mean']
+            patient_loc = x['patient_loc']
 
         # Sample viral loads
-        mu = np.log(np.repeat(patient_mean, data['num_samples_by_patient'])) - \
-            x['patient_scale'] ** 2 / 2
+        mu = np.repeat(patient_loc, data['num_samples_by_patient']) - x['patient_scale'] ** 2 / 2
         load = np.random.lognormal(mu, x['patient_scale'], data['num_samples'])
-        return util.merge_data(data, load=load, patient_mean=patient_mean)
+        return util.merge_data(data, load=load, patient_mean=np.exp(patient_loc))
 
     def _evaluate_statistic(self, x, statistic, n, **kwargs):
         if statistic == 'mean':
             return lognormal_mean(x['population_loc'], x['population_scale'])
         raise ValueError(statistic)
 
-    def _evaluate_observed_likelihood_contributions(self, x, data, n, analytic=True, **kwargs):
-        if analytic:
-            mu = x['population_loc'] - x['patient_scale'] ** 2 / 2
-            lpdf = lognormal_lpdf(data['load'], mu, x['population_scale'])[None]
-            lcdf = lognormal_lcdf(data['loq'], mu, x['population_scale'])[None]
-        else:
-            # Sample the patient-level variables
-            patient_mean = np.random.lognormal(x['population_loc'], x['population_scale'],
-                                               (n, data['num_patients']))
-            # Evaluate the likelihood contributions for each sample given those means
-            mu = np.repeat(np.log(patient_mean), data['num_samples_by_patient'], axis=-1) - \
-                x['patient_scale'] ** 2 / 2
-            lpdf = lognormal_lpdf(data['load'], mu, x['patient_scale'])
-            lcdf = lognormal_lcdf(data['loq'], mu, x['patient_scale'])
+    def _evaluate_observed_likelihood_contributions(self, x, data, n, **kwargs):
+        # Sample the patient-level variables
+        patient_loc = np.random.normal(x['population_loc'], x['population_scale'],
+                                       (n, data['num_patients']))
+        # Evaluate the likelihood contributions for each sample given those means
+        mu = np.repeat(patient_loc, data['num_samples_by_patient'], axis=-1) - \
+            x['patient_scale'] ** 2 / 2
+        lpdf = lognormal_lpdf(data['load'], mu, x['patient_scale'])
+        lcdf = lognormal_lcdf(data['loq'], mu, x['patient_scale'])
         return lpdf, lcdf
 
     @util.broadcast_samples
     def rvs(self, x, size=None):
-        patient_loc = np.random.normal(x['population_loc'], x['population_scale'], size)
+        patient_loc = np.random.normal(x['population_loc'], x['population_scale'], size) - \
+            x['patient_scale'] ** 2 / 2
         return np.random.lognormal(patient_loc, x['patient_scale'], np.shape(patient_loc))
 
 
@@ -143,7 +138,7 @@ class LognormalInflatedModel(util.InflationMixin, LognormalModel):
         real<lower=0> population_scale;
 
         // Individual level parameters
-        vector<lower=0>[num_patients] patient_mean;
+        vector[num_patients] patient_loc;
         real<lower=0> patient_scale;
     }
 
@@ -153,7 +148,7 @@ class LognormalInflatedModel(util.InflationMixin, LognormalModel):
         // Iterate over samples
         for (j in 1:num_samples) {
             int i = idx[j];
-            real mu = log(patient_mean[i]) - patient_scale ^ 2 / 2;
+            real mu = patient_loc[i] - patient_scale ^ 2 / 2;
             if (load[j] > loq[j]) {
                 patient_contrib_[i] += lognormal_lpdf(load[j] | mu, patient_scale);
             } else {
@@ -166,7 +161,7 @@ class LognormalInflatedModel(util.InflationMixin, LognormalModel):
         {{patient_contrib}}
 
         // Sample individual parameters for each person.
-        target += lognormal_lpdf(patient_mean | population_loc, population_scale);
+        target += normal_lpdf(patient_loc | population_loc, population_scale);
         // Monomial priors for the scale parameters (defaults to log-uniform Jeffrey's prior)
         target += prior_population_scale_pow * log(population_scale);
         target += prior_patient_scale_pow * log(patient_scale);
@@ -177,17 +172,16 @@ class LognormalInflatedModel(util.InflationMixin, LognormalModel):
     def replicate(self, x, data, mode, **kwargs):
         if mode == util.ReplicationMode.NEW_GROUPS:
             # Generate group-level means and indicators
-            patient_mean = np.random.lognormal(x['population_loc'], x['population_scale'],
-                                               data['num_patients'])
+            patient_loc = np.random.normal(x['population_loc'], x['population_scale'],
+                                           data['num_patients'])
             z = np.random.uniform(0, 1, data['num_patients']) < x['rho']
         else:
             # Just sample the indicators we marginalised over analytically
             z = util.sample_indicators(x, data)
-            patient_mean = x['patient_mean']
+            patient_loc = x['patient_loc']
 
-        mu = np.log(np.repeat(patient_mean, data['num_samples_by_patient'])) - \
-            x['patient_scale'] ** 2 / 2
+        mu = np.repeat(patient_loc, data['num_samples_by_patient']) - x['patient_scale'] ** 2 / 2
         load = np.random.lognormal(mu, x['patient_scale'])
         load = np.where(np.repeat(z, data['num_samples_by_patient']), load, data['loq'] / 10)
 
-        return util.merge_data(data, load=load, z=z, patient_mean=patient_mean)
+        return util.merge_data(data, load=load, z=z, patient_mean=np.exp(patient_loc))

@@ -8,8 +8,7 @@ import numpy as np
 import os
 import pickle
 import pystan
-from scipy import special
-from ..util import skip_doctest, softmax
+from ..util import skip_doctest, softmax, logmeanexp
 
 
 MODEL_BOILERPLATE = {
@@ -310,10 +309,9 @@ class Model:
             Observed data likelihood for each patient.
         """
         lpdf, lcdf = self._evaluate_observed_likelihood_contributions(x, data, n, **kwargs)
-        # Marginalise with respect to the patient-level attributes
-        lpdf = special.logsumexp(lpdf, axis=0) - np.log(lpdf.shape[0])
-        lcdf = special.logsumexp(lcdf, axis=0) - np.log(lcdf.shape[0])
         sample_likelihood = np.where(data['positive'], lpdf, lcdf)
+        # Marginalise with respect to the patient-level attributes
+        sample_likelihood = logmeanexp(sample_likelihood, axis=0)
 
         # Aggregate by patient
         patient_likelihood = np.zeros(data['num_patients'])

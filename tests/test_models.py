@@ -50,6 +50,7 @@ def replicate1(model, hyperparameters):
 def replicate2(model, hyperparameters, replicate1):
     # Transfer the patient mean to the hyperparameters to be able to replicate existing groups
     hyperparameters['patient_mean'] = replicate1['patient_mean']
+    hyperparameters['patient_loc'] = np.log(replicate1['patient_mean'])
     # Generate some synthetic patient contributions we would've got from fitting
     if isinstance(model, shedding.InflationMixin):
         hyperparameters['patient_contrib_'] = -np.random.gamma(1, size=replicate1['num_patients'])
