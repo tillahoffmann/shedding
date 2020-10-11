@@ -92,7 +92,7 @@ class WeibullModel(util.Model):
         if statistic == 'mean':
             return x['population_scale'] * special.gamma(1 / x['population_shape']) / \
                 x['population_shape']
-        raise ValueError
+        raise NotImplementedError(statistic)
 
     def _evaluate_observed_likelihood_contributions(self, x, data, n=1000, **kwargs):
         patient_mean = weibull_rng(x['population_shape'], x['population_scale'],

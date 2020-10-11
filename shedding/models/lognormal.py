@@ -95,7 +95,7 @@ class LognormalModel(util.Model):
     def _evaluate_statistic(self, x, statistic, n, **kwargs):
         if statistic == 'mean':
             return lognormal_mean(x['population_loc'], x['population_scale'])
-        raise ValueError(statistic)
+        raise NotImplementedError(statistic)
 
     def _evaluate_observed_likelihood_contributions(self, x, data, n, **kwargs):
         # Sample the patient-level variables

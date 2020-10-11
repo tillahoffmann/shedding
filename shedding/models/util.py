@@ -3,6 +3,7 @@ import functools as ft
 import hashlib
 import inspect
 from jinja2 import Template
+import logging
 import numbers
 import numpy as np
 import os
@@ -11,6 +12,7 @@ import pystan
 from ..util import skip_doctest, softmax, logmeanexp
 
 
+LOGGER = logging.getLogger(__name__)
 MODEL_BOILERPLATE = {
     'data': """
         // Information about samples and associations between samples and patients.
@@ -95,7 +97,8 @@ def maybe_build_model(model_code, root='.pystan', **kwargs):
 
     if os.path.isfile(filename):  # Try to load the model
         with open(filename, 'rb') as fp:
-            return pickle.load(fp)
+            model = pickle.load(fp)
+        LOGGER.info('loaded model from %s', filename)
     else:  # Build and store the model otherwise
         model = pystan.StanModel(model_code=model_code, **kwargs)
         os.makedirs(root, exist_ok=True)
@@ -104,7 +107,8 @@ def maybe_build_model(model_code, root='.pystan', **kwargs):
         # Also dump the stan code for reference
         with open(filename.replace('.pkl', '.stan'), 'w') as fp:
             fp.write(model_code)
-        return model
+        LOGGER.info('dumped model to %s', filename)
+    return model
 
 
 def filter_pystan_data(data):
@@ -391,7 +395,7 @@ class InflationMixin:
     def _evaluate_statistic(self, x, statistic, n, **kwargs):
         if statistic == 'mean':
             return x['rho'] * super(InflationMixin, self)._evaluate_statistic(x, statistic, n)
-        raise ValueError(statistic)
+        raise NotImplementedError(statistic)
 
 
 def sample_indicators(x, data):
