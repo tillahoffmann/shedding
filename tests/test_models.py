@@ -7,7 +7,7 @@ import shedding
 
 @pytest.fixture(params=[shedding.GammaModel, shedding.GammaInflatedModel, shedding.LognormalModel,
                         shedding.LognormalInflatedModel, shedding.WeibullModel,
-                        shedding.WeibullInflatedModel])
+                        shedding.WeibullInflatedModel, shedding.GeneralisedGammaModel])
 def model(request):
     return request.param()
 
@@ -24,6 +24,9 @@ def hyperparameters(model):
         params = {'patient_shape': 1, 'population_scale': 1e-5, 'population_shape': 1}
     elif isinstance(model, shedding.WeibullModel):
         params = {'patient_shape': 1, 'population_scale': 1e5, 'population_shape': 1}
+    elif isinstance(model, shedding.GeneralisedGammaModel):
+        params = {'patient_shape': 1, 'patient_scale': 1.7, 'population_shape': 1.2,
+                  'population_scale': 0.8, 'population_loc': 4.1}
     else:
         raise ValueError(model)
     if isinstance(model, shedding.InflationMixin):
@@ -100,3 +103,20 @@ def test_rvs(model, hyperparameters):
     if 'Inflated' in model.__class__.__name__:
         sample = sample[np.isfinite(sample)]
     np.testing.assert_array_less(0, sample)
+
+
+def test_gengamma_qms_abc_conversion():
+    abc = np.random.gamma(1, 1, (3, 100))
+    qms = shedding.abc2qms(*abc)
+    abc2 = shedding.qms2abc(*qms)
+    np.testing.assert_allclose(abc, abc2)
+
+
+def test_gengamma_pdf_cdf():
+    q = 2.5
+    mu = 0.7
+    sigma = 0.3
+    a, b, c = shedding.qms2abc(q, mu, sigma)
+    b = b ** (- 1 / c)
+    dist = stats.gengamma(a, c, scale=b)
+    _test_dist_pdf_cdf(dist, shedding.gengamma_lpdf, shedding.gengamma_lcdf, q, mu, sigma)
