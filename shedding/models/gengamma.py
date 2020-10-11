@@ -98,13 +98,15 @@ class GeneralisedGammaModel(util.Model):
         real<lower=0> population_shape;
         real<lower=0> population_scale_;
 
-        // Individual level parameters (we want to keep a constant coefficient of variation)
-        vector<lower=0>[num_patients] patient_mean;
+        // Individual level parameters
+        vector<lower=0>[num_patients] patient_gamma_;  // Random variable for non-centred setup
         real<lower=0> patient_shape;
         real<lower=0> patient_scale_;
     }
 
     transformed parameters {
+        // Calculation to induce the right distribution using the non-centred setup
+        vector<lower=0>[num_patients] patient_mean;
         // Contribution to the patient_loc
         real loc_contrib_;
         // Contribution to the target
@@ -119,6 +121,9 @@ class GeneralisedGammaModel(util.Model):
             population_scale = population_scale_;
             patient_scale = patient_scale_;
         }
+
+        patient_mean = exp(population_loc + population_scale *
+            log(population_shape ^ 2 * patient_gamma_) / population_shape);
 
         // Evaluate the contribution to the patient_loc
         loc_contrib_ = lgamma(1 / patient_shape ^ 2) -
@@ -136,14 +141,10 @@ class GeneralisedGammaModel(util.Model):
     }
 
     model {
-        // Sample individual parameters for each person
-        vector[num_patients] contrib_;
-        for (i in 1:num_patients) {
-            contrib_[i] = gengamma_lpdf(patient_mean[i] | population_shape, population_loc,
-                population_scale);
-        }
-        target += sum(sample_contrib_) + sum(contrib_);
-        // Prior for unused parameters
+        // Sample individual parameters for each person (non-centred parametrisation)
+        target += gamma_lpdf(patient_gamma_ | 1 / population_shape ^ 2, 1);
+        target += sum(sample_contrib_);
+        // Prior for unused parameters depending on parametrisation
         if (regular_gamma == 1) {
             patient_scale_ ~ gamma(1, 1);
             population_scale_ ~ gamma(1, 1);
