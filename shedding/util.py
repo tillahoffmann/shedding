@@ -1,6 +1,7 @@
 import collections
 import importlib
 import inspect
+import itertools as it
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 import numbers
@@ -291,3 +292,34 @@ def label_axes(axes, x=0.05, y=0.95, va='top', offset=0, **kwargs):
     for i, ax in enumerate(np.ravel(axes)):
         char = bytes([int.from_bytes(b'a', 'little') + i + offset]).decode()
         ax.text(x, y, '(%s)' % char, va=va, transform=ax.transAxes, **kwargs)
+
+
+def broadcast_shapes(*shapes):
+    """
+    Evaluate the shape due to broadcasting any number of shapes against each other.
+
+    Parameters
+    ----------
+    `*shapes` : tuples
+        The shapes to broadcast.
+
+    Returns
+    -------
+    broadcasted_shape : tuple
+        Shape of the array that would be obtained when broadcasting the shapes against each other.
+
+    Examples
+    --------
+    >>> broadcast_shapes((2, 1), (1, 3))
+    (2, 3)
+    """
+    shapes = [shape if isinstance(shape, tuple) else (shape,) for shape in shapes
+              if shape is not None]
+    maxdim = max(map(len, shapes))
+    broadcast_shape = []
+    for i, sizes in enumerate(it.zip_longest(*map(reversed, shapes), fillvalue=1)):
+        sizes = set(sizes) | {1}
+        if len(sizes) > 2:
+            raise ValueError(f'unmatched dimensions at dimension {maxdim - i}')
+        broadcast_shape.append(max(sizes))
+    return tuple(reversed(broadcast_shape))

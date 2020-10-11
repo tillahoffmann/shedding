@@ -26,3 +26,11 @@ def test_logmeanexp(shape, axis):
     actual = shedding.logmeanexp(x, axis)
     desired = np.log(np.mean(np.exp(x), axis))
     np.testing.assert_allclose(actual, desired)
+
+
+@pytest.mark.parametrize('shapes, desired', [
+    ([(3, 4), (5, 3, 1)], (5, 3, 4)),
+    ([(4, 1), 7], (4, 7)),
+])
+def test_broadcast_shapes(shapes, desired):
+    assert shedding.broadcast_shapes(*shapes) == desired

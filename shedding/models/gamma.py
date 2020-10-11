@@ -87,7 +87,7 @@ class GammaModel(util.Model):
             if statistic == 'var':
                 return var
             return np.sqrt(var)
-        raise ValueError(statistic)
+        raise NotImplementedError(statistic)
 
     def _evaluate_observed_likelihood_contributions(self, x, data, n=1000, **kwargs):
         patient_mean = np.random.gamma(x['population_shape'], 1 / x['population_scale'],
