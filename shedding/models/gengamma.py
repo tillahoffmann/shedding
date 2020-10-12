@@ -39,7 +39,7 @@ def gengamma_lpdf(x, q, mu, sigma):
     q2 = q ** 2
     return - (sigma * x ** (q / sigma) * np.exp(-mu * q / sigma) + (2 - q2) * sigma * np.log(q) +
               q * (mu - np.log(x) + q * sigma * (np.log(sigma * x) + special.gammaln(1 / q2)))) / \
-        (sigma * q ** 2)
+        (sigma * q2)
 
 
 def gengamma_lcdf(x, q, mu, sigma):
@@ -55,15 +55,17 @@ def gengamma_mean(q, mu, sigma):
     """
     Evaluate the mean of the generalised gamma distribution.
     """
-    log_mean = mu + 2 * sigma * np.log(q) / q - special.gammaln(q ** -2) + \
-        special.gammaln((1 + q * sigma) / q ** 2)
+    q2 = q ** 2
+    log_mean = mu + 2 * sigma * np.log(q) / q - special.gammaln(1 / q2) + \
+        special.gammaln((1 + q * sigma) / q2)
     return np.exp(log_mean)
 
 
 def gengamma_rvs(q, mu, sigma, size=None):
+    q2 = q ** 2
     size = broadcast_shapes(np.shape(q), np.shape(mu), np.shape(sigma), size)
-    gamma = np.random.standard_gamma(q ** -2, size=size)
-    w = np.log(q ** 2 * gamma) / q
+    gamma = np.random.standard_gamma(1 / q2, size=size)
+    w = np.log(q2 * gamma) / q
     return np.exp(mu + sigma * w)
 
 
@@ -73,82 +75,58 @@ class GeneralisedGammaModel(util.Model):
     """
     MODEL_CODE = """
     functions {
-        real gengamma_lpdf(real x, real q, real mu, real sigma) {
-            real q2 = q ^ 2;
-            return - (sigma * x ^ (q / sigma) * exp(-mu * q / sigma) + (2 - q2) * sigma * log(q) +
-                q * (mu - log(x) + q * sigma * (log(sigma * x) + lgamma(1 / q2)))) / (sigma * q2);
-        }
-
-        real gengamma_lcdf(real x, real q, real mu, real sigma) {
-            real log_arg = q / sigma * log(x) - mu * q / sigma - 2 * log(q);
-            return log(gamma_p(1 / q ^ 2, exp(log_arg)));
-        }
+        {{gengamma_lpdf_lcdf}}
     }
 
     data {
         {{data}}
-
-        // Whether to restrict to the regular gamma distribution
-        int regular_gamma;
     }
 
     parameters {
-        // Population level parameters
+        // Population level parameters.
         real population_loc;
         real<lower=0> population_shape;
-        real<lower=0> population_scale_;
+        real<lower=0> population_scale;
 
         // Individual level parameters
-        vector<lower=0>[num_patients] patient_gamma_;  // Random variable for non-centred setup
+        real<lower=0> patient_scale;
         real<lower=0> patient_shape;
-        real<lower=0> patient_scale_;
+        // Random variable for non-centred setup.
+        vector<lower=0>[num_patients] patient_gamma_;
     }
 
     transformed parameters {
-        // Calculation to induce the right distribution using the non-centred setup
-        vector<lower=0>[num_patients] patient_mean;
-        // Contribution to the patient_loc
-        real loc_contrib_;
-        // Contribution to the target
-        vector[num_samples] sample_contrib_;
-        // Declare transformed parameters for the population_scale and patient_scale
-        real<lower=0> population_scale;
-        real<lower=0> patient_scale;
-        if (regular_gamma == 1) {
-            population_scale = population_shape;
-            patient_scale = patient_shape;
-        } else {
-            population_scale = population_scale_;
-            patient_scale = patient_scale_;
-        }
-
-        patient_mean = exp(population_loc + population_scale *
+        // Evaluate the patient mean in terms of the gamma random variable for an almost non-centred
+        // parametrisatoin.
+        vector<lower=0>[num_patients] patient_mean = exp(population_loc + population_scale *
             log(population_shape ^ 2 * patient_gamma_) / population_shape);
-
-        // Evaluate the contribution to the patient_loc
-        loc_contrib_ = lgamma(1 / patient_shape ^ 2) -
+        // Contribution to the patient_loc, evaluated once for efficiency.
+        real loc_contrib_ = lgamma(1 / patient_shape ^ 2) -
             lgamma((1 + patient_shape * patient_scale) / patient_shape ^ 2) -
             2 * patient_scale * log(patient_shape) / patient_shape;
-        // Evaluate contributions to the target
+        // Vector to hold the contributions to the target density for each sample.
+        vector[num_samples] sample_contrib_;
+
+        // Evaluate contributions to the target.
         for (j in 1:num_samples) {
+            // Evaluation the location parameter for this sample.
             real loc = log(patient_mean[idx[j]]) + loc_contrib_;
             if (load[j] > loq[j]) {
+                // Account for quantitative observations of the concentration in a sample.
                 sample_contrib_[j] = gengamma_lpdf(load[j] | patient_shape, loc, patient_scale);
             } else {
+                // Handle left-censoring if the concentration is below the level of quantification.
                 sample_contrib_[j] = gengamma_lcdf(loq[j] | patient_shape, loc, patient_scale);
             }
         }
     }
 
     model {
-        // Sample individual parameters for each person (non-centred parametrisation)
+        // Sample the latent gamma parameters that induce the generalised gamma prior for the
+        // patient mean.
         target += gamma_lpdf(patient_gamma_ | 1 / population_shape ^ 2, 1);
+        // Add the contributions from all the samples.
         target += sum(sample_contrib_);
-        // Prior for unused parameters depending on parametrisation
-        if (regular_gamma == 1) {
-            patient_scale_ ~ gamma(1, 1);
-            population_scale_ ~ gamma(1, 1);
-        }
     }
     """
     DEFAULT_DATA = {
