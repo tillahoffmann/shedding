@@ -18,6 +18,7 @@ MODEL_BOILERPLATE = {
         // Information about samples and associations between samples and patients.
         int<lower=0> num_patients;
         int<lower=0> num_samples;
+        // Lookup table for patients: i = idx[j] is the patient index for sample j.
         int idx[num_samples];
 
         // Information about number of positives and negatives for each patient.
@@ -25,7 +26,7 @@ MODEL_BOILERPLATE = {
         int<lower=0> num_positives_by_patient[num_patients];
         int<lower=0> num_negatives_by_patient[num_patients];
 
-        // Data on the natural scale.
+        // Concentration measurements and levels of quantification.
         vector[num_samples] load;
         vector[num_samples] loq;
     """,
@@ -47,6 +48,20 @@ MODEL_BOILERPLATE = {
             }
         }
     """,
+    'gengamma_lpdf_lcdf': """
+        // Log pdf for the generalised gamma distribution according to Stacey (1962).
+        real gengamma_lpdf(real x, real q, real mu, real sigma) {
+            real q2 = q ^ 2;
+            return - (sigma * x ^ (q / sigma) * exp(-mu * q / sigma) + (2 - q2) * sigma * log(q) +
+                q * (mu - log(x) + q * sigma * (log(sigma * x) + lgamma(1 / q2)))) / (sigma * q2);
+        }
+
+        // Log cdf for the generalised gamma distribution according to Stacey (1962).
+        real gengamma_lcdf(real x, real q, real mu, real sigma) {
+            real log_arg = q / sigma * log(x) - mu * q / sigma - 2 * log(q);
+            return log(gamma_p(1 / q ^ 2, exp(log_arg)));
+        }
+    """
 }
 
 

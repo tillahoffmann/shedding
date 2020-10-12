@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import pystan
 import pytest
 from scipy import stats
@@ -120,3 +121,29 @@ def test_gengamma_pdf_cdf():
     b = b ** (- 1 / c)
     dist = stats.gengamma(a, c, scale=b)
     _test_dist_pdf_cdf(dist, shedding.gengamma_lpdf, shedding.gengamma_lcdf, q, mu, sigma)
+
+
+@pytest.mark.skipif(os.environ.get('CI') is not None, reason='avoid lengthy compilatoin during CI')
+def test_pystan_gengamma_lcdf_lpdf():
+    q, mu, sigma, x = np.random.gamma(1, size=4)
+    model = shedding.Model("""
+    functions {
+        {{gengamma_lpdf_lcdf}}
+    }
+
+    data {
+        real q;
+        real mu;
+        real sigma;
+        real x;
+    }
+
+    transformed parameters {
+        real lpdf = gengamma_lpdf(x | q, mu, sigma);
+        real lcdf = gengamma_lcdf(x | q, mu, sigma);
+    }
+    """)
+    data = {'q': q, 'mu': mu, 'sigma': sigma, 'x': x}
+    fit = model.sampling(data, iter=1, algorithm='Fixed_param', warmup=0)
+    np.testing.assert_allclose(fit['lpdf'], shedding.gengamma_lpdf(**data))
+    np.testing.assert_allclose(fit['lcdf'], shedding.gengamma_lcdf(**data))
