@@ -80,32 +80,76 @@ class GeneralisedGammaModel(util.Model):
 
     data {
         {{data}}
+
+        // Flag to experiment with parametrisation
+        // 0: infer all parameters
+        // 1: gamma distribution such that q = sigma
+        // 2: shape q pinned to known values
+        // 3: scale sigma pinned to known values
+        int flag;
+        real population_shape_fixed;
+        real population_scale_fixed;
+        real patient_shape_fixed;
+        real patient_scale_fixed;
     }
 
     parameters {
         // Population level parameters.
         real population_loc;
-        real<lower=0> population_shape;
-        real<lower=0> population_scale;
+        real<lower=0> population_shape_param_;
+        real<lower=0> population_scale_param_;
 
         // Individual level parameters
-        real<lower=0> patient_scale;
-        real<lower=0> patient_shape;
+        real<lower=0> patient_scale_param_;
+        real<lower=0> patient_shape_param_;
         // Random variable for non-centred setup.
         vector<lower=0>[num_patients] patient_gamma_;
     }
 
     transformed parameters {
-        // Evaluate the patient mean in terms of the gamma random variable for an almost non-centred
-        // parametrisatoin.
-        vector<lower=0>[num_patients] patient_mean = exp(population_loc + population_scale *
-            log(population_shape ^ 2 * patient_gamma_) / population_shape);
-        // Contribution to the patient_loc, evaluated once for efficiency.
-        real loc_contrib_ = lgamma(1 / patient_shape ^ 2) -
-            lgamma((1 + patient_shape * patient_scale) / patient_shape ^ 2) -
-            2 * patient_scale * log(patient_shape) / patient_shape;
+        // Declare transformed parameters.
+        vector<lower=0>[num_patients] patient_mean;
+        real<lower=0> population_shape;
+        real<lower=0> population_scale;
+        real<lower=0> patient_shape;
+        real<lower=0> patient_scale;
+        real loc_contrib_;
         // Vector to hold the contributions to the target density for each sample.
         vector[num_samples] sample_contrib_;
+
+        // Evaluate parameters based on the supplied flag
+        if (flag == 0) {
+            population_shape = population_shape_param_;
+            population_scale = population_scale_param_;
+            patient_shape = patient_shape_param_;
+            patient_scale = patient_scale_param_;
+        } else if (flag == 1) {
+            population_shape = population_shape_param_;
+            population_scale = population_shape_param_;
+            patient_shape = patient_shape_param_;
+            patient_scale = patient_shape_param_;
+        } else if (flag == 2) {
+            population_shape = population_shape_fixed;
+            population_scale = population_scale_param_;
+            patient_shape = patient_shape_fixed;
+            patient_scale = patient_scale_param_;
+        } else if (flag == 3) {
+            population_shape = population_shape_param_;
+            population_scale = population_scale_fixed;
+            patient_shape = patient_shape_param_;
+            patient_scale = patient_scale_fixed;
+        } else {
+            reject("unknown flag value: ", flag);
+        }
+
+        // Evaluate the patient mean in terms of the gamma random variable for an almost non-centred
+        // parametrisatoin.
+        patient_mean = exp(population_loc + population_scale *
+            log(population_shape ^ 2 * patient_gamma_) / population_shape);
+        // Contribution to the patient_loc, evaluated once for efficiency.
+        loc_contrib_ = lgamma(1 / patient_shape ^ 2) -
+            lgamma((1 + patient_shape * patient_scale) / patient_shape ^ 2) -
+            2 * patient_scale * log(patient_shape) / patient_shape;
 
         // Evaluate contributions to the target.
         for (j in 1:num_samples) {
@@ -127,10 +171,22 @@ class GeneralisedGammaModel(util.Model):
         target += gamma_lpdf(patient_gamma_ | 1 / population_shape ^ 2, 1);
         // Add the contributions from all the samples.
         target += sum(sample_contrib_);
+        // Add some standard priors for parameters that are left unconstrained based on the flag.
+        if (flag == 1 || flag == 3) {
+            population_scale_param_ ~ gamma(1, 1);
+            patient_scale_param_ ~ gamma(1, 1);
+        } else if (flag == 2) {
+            population_shape_param_ ~ gamma(1, 1);
+            patient_shape_param_ ~ gamma(1, 1);
+        }
     }
     """
     DEFAULT_DATA = {
-        'regular_gamma': 0,
+        'flag': 0,
+        'population_shape_fixed': 0,
+        'population_scale_fixed': 0,
+        'patient_shape_fixed': 0,
+        'patient_scale_fixed': 0,
     }
 
     def _evaluate_loc(self, q, mean, sigma):
