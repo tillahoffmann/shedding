@@ -1,3 +1,4 @@
+import collections
 import enum
 import functools as ft
 import hashlib
@@ -150,12 +151,21 @@ def transpose_samples(fit, pars=None):
     """
     if fit.__class__.__name__ == 'StanFit4Model':
         fit = fit.extract(pars)
-    samples = []
-    for key, values in fit.items():
-        for i, value in enumerate(values):
-            if not i < len(samples):
-                samples.append({})
-            samples[i][key] = value
+    if isinstance(fit, collections.abc.Mapping):
+        samples = []
+        for key, values in fit.items():
+            for i, value in enumerate(values):
+                if not i < len(samples):
+                    samples.append({})
+                samples[i][key] = value
+    elif isinstance(fit, collections.abc.Sequence):
+        samples = {}
+        for x in fit:
+            for key, value in x.items():
+                samples.setdefault(key, []).append(value)
+        samples = {key: np.asarray(value) for key, value in samples.items()}
+    else:
+        raise TypeError
     return samples
 
 
@@ -217,7 +227,7 @@ class Model:
     """
     Pystan model abstraction with python-based replication.
     """
-    def __init__(self, model_code=None, **kwargs):
+    def __init__(self, model_code=None, default_data=None, **kwargs):
         model_code = model_code or self.MODEL_CODE
         if not model_code:
             raise ValueError("missing model code")
@@ -229,6 +239,9 @@ class Model:
         kwargs.setdefault('model_name', self.__class__.__name__)
         self._kwargs = kwargs
         self._pystan_model = None
+
+        # Set any default data
+        self.default_data = {**self.DEFAULT_DATA, **(default_data or {})}
 
     @property
     def pystan_model(self):
@@ -244,7 +257,7 @@ class Model:
     def sampling(self, data, *args, **kwargs):
         # Filter the data and add defaults
         data = filter_pystan_data(data)
-        for key, value in self.DEFAULT_DATA.items():
+        for key, value in self.default_data.items():
             data.setdefault(key, value)
         # Use only one chain by default because of a bug in pystan
         kwargs.setdefault('n_jobs', 1)
