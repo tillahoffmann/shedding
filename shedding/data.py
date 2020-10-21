@@ -105,7 +105,7 @@ def flatten_datasets(datasets, loq_fill_value=np.nan, day_fill_value=np.nan):
             # Assign a consistent patient index across different samples
             patient = x['patient']
             i = patient_lookup.setdefault((key, patient), len(patient_lookup))
-            data.setdefault('idx', []).append(i + 1)
+            data.setdefault('idx', []).append(i)
             data.setdefault('patient', []).append(patient)
 
             # Add the values

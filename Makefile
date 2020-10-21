@@ -1,4 +1,4 @@
-.PHONY : clean docs doctests tests
+.PHONY : clean docs doctests tests pypolychord
 
 build : flake8 tests docs
 
@@ -15,7 +15,7 @@ docs : doctests requirements.txt
 	sphinx-build . docs/_build
 
 clean :
-	rm -rf docs/_build
+	rm -rf docs/_build PolyChordLite
 
 # Generate pinned dependencies
 requirements.txt : requirements.in setup.py
@@ -26,3 +26,11 @@ requirements.txt : requirements.in setup.py
 # (cf. https://github.com/nektos/act)
 build_action :
 	act -P ubuntu-latest=nektos/act-environments-ubuntu:18.04
+
+PolyChordLite :
+	git clone --depth 1 --branch 1.18.1 git@github.com:PolyChord/PolyChordLite.git
+
+pypolychord : PolyChordLite
+	cd PolyChordLite \
+		&& make MPI=0 libchord.so \
+		&& python setup.py --no-mpi install
