@@ -144,6 +144,8 @@ cython_debug/
 .vscode
 playground/
 .pystan
+workspace/
+PolyChordLite/
 
 # Exclude everything in the publications folder ...
 publications/*/*

@@ -27,7 +27,7 @@ flake8==3.8.4             # via shedding
 fspath==20190323          # via linuxdoc
 idna==2.10                # via requests
 imagesize==1.2.0          # via sphinx
-iniconfig==1.0.1          # via pytest
+iniconfig==1.1.1          # via pytest
 ipykernel==5.3.4          # via ipywidgets, jupyter, jupyter-console, notebook, qtconsole
 ipython-genutils==0.2.0   # via nbformat, notebook, qtconsole, traitlets
 ipython==7.18.1           # via ipykernel, ipywidgets, jupyter-console
@@ -42,13 +42,14 @@ jupyter==1.0.0            # via -r requirements.in
 jupyterlab-pygments==0.1.2  # via nbconvert
 kiwisolver==1.2.0         # via matplotlib
 git+http://github.com/return42/linuxdoc.git  # via shedding
+localscope==0.1.2         # via -r requirements.in
 markupsafe==1.1.1         # via jinja2
 matplotlib==3.3.2         # via shedding
 mccabe==0.6.1             # via flake8
 mistune==0.8.4            # via nbconvert
-nbclient==0.5.0           # via nbconvert
+nbclient==0.5.1           # via nbconvert
 nbconvert==6.0.7          # via jupyter, notebook
-nbformat==5.0.7           # via ipywidgets, nbclient, nbconvert, notebook
+nbformat==5.0.8           # via ipywidgets, nbclient, nbconvert, notebook
 nest-asyncio==1.4.1       # via nbclient
 notebook==6.1.4           # via jupyter, widgetsnbextension
 numpy==1.19.2             # via matplotlib, pandas, pystan, scipy, shedding
@@ -58,10 +59,10 @@ pandocfilters==1.4.2      # via nbconvert
 parso==0.7.1              # via jedi
 pexpect==4.8.0            # via ipython
 pickleshare==0.7.5        # via ipython
-pillow==7.2.0             # via matplotlib
+pillow==8.0.0             # via matplotlib
 pluggy==0.13.1            # via pytest
 prometheus-client==0.8.0  # via notebook
-prompt-toolkit==3.0.7     # via ipython, jupyter-console
+prompt-toolkit==3.0.8     # via ipython, jupyter-console
 ptyprocess==0.6.0         # via pexpect, terminado
 py==1.9.0                 # via pytest
 pycodestyle==2.6.0        # via flake8
@@ -79,7 +80,7 @@ pyzmq==19.0.2             # via jupyter-client, notebook, qtconsole
 qtconsole==4.7.7          # via jupyter
 qtpy==1.9.0               # via qtconsole
 requests==2.24.0          # via sphinx
-scipy==1.5.2              # via shedding
+scipy==1.5.3              # via shedding
 send2trash==1.5.0         # via notebook
 six==1.15.0               # via argon2-cffi, bleach, cycler, fspath, jsonschema, packaging, python-dateutil
 snowballstemmer==2.0.0    # via sphinx
@@ -95,8 +96,8 @@ testpath==0.4.4           # via nbconvert
 toml==0.10.1              # via pytest
 tornado==6.0.4            # via ipykernel, jupyter-client, notebook, terminado
 tqdm==4.50.2              # via -r requirements.in
-traitlets==5.0.4          # via ipykernel, ipython, ipywidgets, jupyter-client, jupyter-core, nbclient, nbconvert, nbformat, notebook, qtconsole
-urllib3==1.25.10          # via requests
+traitlets==5.0.5          # via ipykernel, ipython, ipywidgets, jupyter-client, jupyter-core, nbclient, nbconvert, nbformat, notebook, qtconsole
+urllib3==1.25.11          # via requests
 wcwidth==0.2.5            # via prompt-toolkit
 webencodings==0.5.1       # via bleach
 widgetsnbextension==3.5.1  # via ipywidgets
