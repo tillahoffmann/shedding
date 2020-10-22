@@ -231,8 +231,9 @@ def _gengamma_mean(q, mu, sigma):
     """
     Evaluate the mean of the generalised gamma distribution.
     """
-    a, b, c = to_abc(q, mu, sigma)
-    log_mean = - np.log(b) / c + special.gammaln(a + 1 / c) - special.gammaln(a)
+    a = 1 / q ** 2
+    cinv = sigma / q
+    log_mean = mu - np.log(a) * cinv + special.gammaln(a + cinv) - special.gammaln(a)
     return np.exp(log_mean)
 
 

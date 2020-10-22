@@ -74,12 +74,14 @@ def flatten_datasets(datasets, loq_fill_value=np.nan, day_fill_value=np.nan):
         * **num_negatives_by_patient** (`ndarray[int]<num_patients>`): Number of negative samples
           for each patient.
         * **idx** (`ndarray[int]<num_samples>`): Index of the patient from whom each sample was
-          collected. The indices are one-based for compatibility with `pystan`.
+          collected.
         * **load** (`ndarray[float]<num_samples>`): Viral RNA load for each sample as gene copies
           per mL or `10 ** loq_fill_value` if the concentration is below the level of
           quantification.
+        * **loadln** (`ndarray[float]<num_samples>`): Natural logarithm of **load**.
         * **loq** (`ndarray[float]<num_samples>`): Level of quantification for each sample as gene
           copies per mL.
+        * **loqln** (`ndarray[float]<num_samples>`): Natural logarithm of **loq**.
         * **positive** (`ndarray[bool]<num_samples>`): Indicator for each sample as to whether the
           RNA load is above the level of quantification.
         * **day** (`ndarray[int]<num_samples>`): Day after symptom onset on which the sample was
