@@ -11,7 +11,7 @@ def broadcast_samples(func):
     Decorator to broadcast the function across samples provided as the first argument.
     """
     @ft.wraps(func)
-    def _wrapper(*args, **kwargs):
+    def _broadcast_samples_wrapper(*args, **kwargs):
         # Use different behaviour for instance methods to account for `self`
         if 'self' in inspect.signature(func).parameters:
             self, x, *args = args
@@ -24,7 +24,7 @@ def broadcast_samples(func):
             return np.asarray([partial(y, *args, **kwargs) for y in x])
         return partial(x, *args, **kwargs)
 
-    return _wrapper
+    return _broadcast_samples_wrapper
 
 
 def evaluate_size(parameters):
@@ -171,48 +171,58 @@ def write_paramnames_file(parameters, filename, escape=True):
                     fp.write(f'{parameter}[{", ".join(map(str, index))}]\n')
 
 
-def lognormal_lpdf(mu, sigma, x):
+_LN_PDF_CONSTANT = np.log(2 * np.pi) / 2
+_SQRT2 = np.sqrt(2)
+
+
+def lognormal_lpdf(mu, sigma, logx):
     """
     Evaluate the natural logarithm of the lognormal probability density function.
     """
-    return - (np.log(2 * np.pi) / 2 + (mu - np.log(x)) ** 2 / (2 * sigma ** 2) + np.log(sigma * x))
+    result = _LN_PDF_CONSTANT + np.log(sigma) + np.square((mu - logx) / sigma) / 2 + logx
+    return - result
 
 
-def lognormal_lcdf(mu, sigma, x):
+def lognormal_lcdf(mu, sigma, logx):
     """
     Evaluate the natural logarithm of the lognormal cumulative distribution function.
     """
-    return np.log(special.erfc((mu - np.log(x)) / (sigma * np.sqrt(2))) / 2)
+    cdf = special.erfc((mu - logx) / (sigma * _SQRT2)) / 2
+    return np.log(cdf)
 
 
 def lognormal_mean(mu, sigma):
     """
     Evaluate the mean of the lognormal distribution.
     """
-    return np.exp(mu + sigma ** 2 / 2)
+    return np.exp(mu + sigma * sigma / 2)
 
 
 def lognormal_loc(sigma, mean):
     """
     Evaluate the lognormal location parameter given the mean.
     """
-    return np.log(mean) - sigma ** 2 / 2
+    return np.log(mean) - sigma * sigma / 2
 
 
-def _gengamma_lpdf(q, mu, sigma, x):
+def _gengamma_lpdf(q, mu, sigma, logx):
     """
     Evaluate the natural logarithm of the generalised gamma pdf.
     """
-    a, b, c = to_abc(q, mu, sigma)
-    return - b * x ** c + a * np.log(b) + np.log(c) + (a * c - 1) * np.log(x) - special.gammaln(a)
+    a = 1 / (q * q)
+    c = q / sigma
+    return np.log(c) - special.gammaln(a) + a * np.log(a) + (a * c - 1) * logx - \
+        a * (mu * c + np.exp(c * (logx - mu)))
 
 
-def _gengamma_lcdf(q, mu, sigma, x):
+def _gengamma_lcdf(q, mu, sigma, logx):
     """
     Evaluate the natural logarithm of the generalised gamma cdf.
     """
-    a, b, c = to_abc(q, mu, sigma)
-    arg = b * x ** c
+    a = 1 / (q * q)
+    c = q / sigma
+    logarg = c * (logx - mu)
+    arg = a * np.exp(logarg)
     cdf = special.gammainc(a, arg)
     return np.log(cdf)
 
@@ -230,32 +240,23 @@ def _gengamma_loc(q, sigma, mean):
     """
     Evaluate the scale of the generalised gamma distribution for given shape, exponent, and mean.
     """
-    a, _, c = to_abc(q, None, sigma)
-    b = np.exp(- c * (np.log(mean) + special.gammaln(a) - special.gammaln(a + 1 / c)))
-    _, mu, _ = from_abc(a, b, c)
-    return mu
+    a = 1 / q ** 2
+    c = q / sigma
+    mu = np.log(a) / c + special.gammaln(a) - special.gammaln(a + 1 / c)
+    return mu + np.log(mean)
 
 
 def q_branch(gengamma, lognormal):
     """
     Generate a function that uses `lognormal` when the first argument is zero and `gengamma`
-    otherwise.
+    otherwise. This wrapper does not support broadcasting with respect to the first argument.
     """
     @ft.wraps(gengamma)
-    def _wrapper(q, *args, **kwargs):
-        # If all qs are zero, just return the lognormal branch
-        q0 = q == 0
-        qs = np.isscalar(q)
-        if (qs and q0) or np.all(q0):
+    def _q_branch_wrapper(q, *args, **kwargs):
+        if q == 0:
             return lognormal(*args, **kwargs)
-
-        value = gengamma(q, *args, **kwargs)
-        # If none of the qs are zero, just return the generalised gamma lpdf
-        if (qs and not q0) or not np.any(q0):
-            return value
-        # Return a composite of the two functions
-        return np.where(q0, lognormal(*args, **kwargs), value)
-    return _wrapper
+        return gengamma(q, *args, **kwargs)
+    return _q_branch_wrapper
 
 
 gengamma_lpdf = q_branch(_gengamma_lpdf, lognormal_lpdf)
@@ -265,94 +266,72 @@ gengamma_loc = q_branch(_gengamma_loc, lognormal_loc)
 
 
 class Prior:
-    @property
-    def lower(self):
-        return None
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        self.lower = None
+        self.upper = None
 
-    @property
-    def upper(self):
-        return None
+    @classmethod
+    def from_uniform(cls, uniform):
+        raise NotImplementedError
 
     @property
     def bounds(self):
         return (self.lower, self.upper)
 
     def __call__(self, u):
-        raise NotImplementedError
+        return self.from_uniform(u, **self.kwargs)
+
+
+class PositivePrior:
+    def __init__(self, **kwargs):
+        super(PositivePrior, self).__init__(**kwargs)
+        self.lower = 0
 
 
 class NormalPrior(Prior):
-    def __init__(self, mu=0, sigma=1):
-        self.mu = mu
-        self.sigma = sigma
-
-    def __call__(self, u):
-        return self.mu + self.sigma * np.sqrt(2) * special.erfinv(2 * u - 1)
+    @classmethod
+    def from_uniform(cls, uniform, mu, sigma):
+        return mu + sigma * np.sqrt(2) * special.erfinv(2 * uniform - 1)
 
 
-class LognormalPrior(NormalPrior):
-    def __init__(self, mu=0, sigma=1):
-        self.mu = mu
-        self.sigma = sigma
-
-    @property
-    def lower(self):
-        return 0
-
-    def __call__(self, u):
-        return np.exp(super(LognormalPrior, self).__call__(u))
+class LognormalPrior(PositivePrior):
+    @classmethod
+    def from_uniform(cls, uniform, mu, sigma):
+        return np.exp(NormalPrior.from_uniform(uniform, mu, sigma))
 
 
-class GengammaPrior(Prior):
-    def __init__(self, q=1, mu=0, sigma=1):
-        self.q = q
-        self.mu = mu
-        self.sigma = sigma
-        if self.q != 0:
-            self.a, self.b, self.c = to_abc(self.q, self.mu, self.sigma)
-
-    @property
-    def lower(self):
-        return 0
-
-    def __call__(self, u):
-        if self.q == 0:
-            return LognormalPrior(self.mu, self.sigma)(u)
-        return (special.gammaincinv(self.a, u) / self.b) ** (1 / self.c)
+class GengammaPrior(PositivePrior):
+    @classmethod
+    def from_uniform(cls, uniform, q, mu, sigma):
+        if q == 0:
+            return LognormalPrior.from_uniform(uniform, mu, sigma)
+        a = 1 / (q * q)
+        cinv = sigma / q
+        return (special.gammaincinv(a, uniform) / a) ** cinv * np.exp(mu)
 
 
 class UniformPrior(Prior):
     def __init__(self, lower, upper):
-        self._lower = lower
-        self._upper = upper
+        super(UniformPrior, self).__init__(lower=lower, upper=upper)
+        self.lower = lower
+        self.upper = upper
 
-    @property
-    def lower(self):
-        return self._lower
-
-    @property
-    def upper(self):
-        return self._upper
-
-    def __call__(self, u):
-        return self._lower + u * (self._upper - self._lower)
+    @classmethod
+    def from_uniform(cls, uniform, lower, upper):
+        return lower + uniform * (upper - lower)
 
 
 class LoguniformPrior(UniformPrior):
-    def __init__(self, lower, upper, base=np.e):
-        super(LoguniformPrior, self).__init__(lower, upper)
-        self.base = base
+    def __init__(self, lower, upper, base=None):
+        base = base or np.e
+        super(UniformPrior, self).__init__(lower=lower, upper=upper, base=base)
+        self.lower = base ** lower
+        self.upper = base ** upper
 
-    @property
-    def lower(self):
-        return self.base ** self._lower
-
-    @property
-    def upper(self):
-        return self.base ** self._upper
-
-    def __call__(self, u):
-        return self.base ** super(LoguniformPrior, self).__call__(u)
+    @classmethod
+    def from_uniform(cls, uniform, lower, upper, base):
+        return base ** UniformPrior.from_uniform(uniform, lower, upper)
 
 
 def from_abc(a, b, c):
@@ -505,9 +484,10 @@ class Model:
         """
         Sample individual-level parameters.
         """
-        prior = GengammaPrior(values['population_shape'], values['population_loc'],
-                              values['population_scale'])
-        values['patient_mean'] = prior(values['patient_mean'])
+        # Use from_uniform directly to avoid overhead of instance creation
+        values['patient_mean'] = GengammaPrior.from_uniform(
+            values['patient_mean'], values['population_shape'], values['population_loc'],
+            values['population_scale'])
         return values
 
     def sample_params(self, values):
@@ -539,8 +519,8 @@ class Model:
         sigma = values['patient_scale']
         mu = gengamma_loc(q, sigma, values['patient_mean'])
         mu = np.repeat(mu, data['num_samples_by_patient'], axis=-1)
-        lpdf = gengamma_lpdf(q, mu, sigma, data['load'])
-        lcdf = gengamma_lcdf(q, mu, sigma, data['loq'])
+        lpdf = gengamma_lpdf(q, mu, sigma, data['loadln'])
+        lcdf = gengamma_lcdf(q, mu, sigma, data['loqln'])
         return np.where(data['positive'], lpdf, lcdf)
 
     def _evaluate_patient_log_likelihood(self, values, data):
@@ -587,8 +567,9 @@ class Model:
         values = dict(values)
         # Sample the patient means
         uniform = np.random.uniform(size=(n, data['num_patients']))
-        values['patient_mean'] = GengammaPrior(values['population_shape'], values['population_loc'],
-                                               values['population_scale'])(uniform)
+        values['patient_mean'] = GengammaPrior.from_uniform(
+            uniform, values['population_shape'], values['population_loc'],
+            values['population_scale'])
         # Evaluate the sample log likelihood and marginalise with respect to the patient-level
         # attributes
         sample_likelihood = self._evaluate_sample_log_likelihood(values, data)
@@ -629,13 +610,16 @@ class Model:
             Sample drawn from the posterior predictive distribution.
         """
         # Sample the patient means
-        patient_mean = GengammaPrior(values['population_shape'], values['population_loc'],
-                                     values['population_scale'])(np.random.uniform(size=size))
+        uniform = np.random.uniform(size=size)
+        patient_mean = GengammaPrior.from_uniform(
+            uniform, values['population_shape'], values['population_loc'],
+            values['population_scale'])
         # Evaluate the locations for the sample distribution
         loc = gengamma_loc(values['patient_shape'], values['patient_scale'], patient_mean)
         # Sample the RNA loads
-        sample = GengammaPrior(values['patient_shape'], loc, values['patient_scale'])(
-            np.random.uniform(size=size))
+        uniform = np.random.uniform(size=size)
+        sample = GengammaPrior.from_uniform(uniform, values['patient_shape'], loc,
+                                            values['patient_scale'])
         if not self.inflated:
             return sample
         # Account for non-shedders
@@ -676,7 +660,7 @@ class Model:
         sigma = values['patient_scale']
         mu = gengamma_loc(q, sigma, values['patient_mean'])
         mu = np.repeat(mu, data['num_samples_by_patient'])
-        load = GengammaPrior(q, mu, sigma)(np.random.uniform(size=mu.size))
+        load = GengammaPrior.from_uniform(np.random.uniform(size=mu.size), q, mu, sigma)
 
         # Account for the patients who do not shed any RNA
         if self.inflated:
@@ -700,6 +684,7 @@ class Model:
             z = np.repeat(z, data['num_samples_by_patient'])
             load = np.where(z, load, loq / 2)
         data['load'] = load
+        data['loadln'] = np.log(load)
         data['positive'] = positive = load >= loq
 
         # Update summary statistics

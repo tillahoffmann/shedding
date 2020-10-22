@@ -133,6 +133,8 @@ def flatten_datasets(datasets, loq_fill_value=np.nan, day_fill_value=np.nan):
         'num_negatives_by_patient': dict_to_array(num_negatives_by_patient,
                                                   size=num_patients, dtype=int),
         'positive': data['load'] > data['loq'],
+        'loadln': np.log(data['load']),
+        'loqln': np.log(data['loq']),
     })
 
     return data

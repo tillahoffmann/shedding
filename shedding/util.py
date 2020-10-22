@@ -332,7 +332,7 @@ def flush_traceback(func):
     Decorator to flush the traceback of an exception before the kernel dies.
     """
     @ft.wraps(func)
-    def _wrapper(*args, **kwargs):
+    def _flush_traceback_wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except:  # noqa: E722
@@ -340,4 +340,4 @@ def flush_traceback(func):
             sys.stderr.flush()
             sys.stdout.flush()
             raise
-    return _wrapper
+    return _flush_traceback_wrapper

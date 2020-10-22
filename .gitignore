@@ -143,6 +143,7 @@ cython_debug/
 .DS_Store
 .vscode
 playground/
+playground_*
 .pystan
 workspace/
 PolyChordLite/

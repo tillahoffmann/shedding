@@ -30,11 +30,11 @@ def x(dist):
 
 
 def test_gengamma_lpdf(qms, dist, x):
-    np.testing.assert_allclose(shedding.gengamma_lpdf(*qms, x), dist.logpdf(x))
+    np.testing.assert_allclose(shedding.gengamma_lpdf(*qms, np.log(x)), dist.logpdf(x))
 
 
 def test_gengamma_lcdf(qms, dist, x):
-    np.testing.assert_allclose(shedding.gengamma_lcdf(*qms, x), dist.logcdf(x))
+    np.testing.assert_allclose(shedding.gengamma_lcdf(*qms, np.log(x)), dist.logcdf(x))
 
 
 def test_gengamma_mean(qms, dist):
@@ -73,13 +73,6 @@ def test_transpose_samples_roundtrip():
     [np.testing.assert_allclose(value, values[key]) for key, value in reconstructed.items()]
 
 
-def test_gengamma_lpdf_composite():
-    qms = (np.arange(2), .5, 1.2)
-    x = np.random.gamma(1, size=(10, 1))
-    lpdf = shedding.gengamma_lpdf(*qms, x)
-    assert np.all(np.isfinite(lpdf))
-
-
 @pytest.fixture(params=it.product(shedding.Parametrisation, [False, True]))
 def model(request):
     return shedding.Model(10, *request.param)
@@ -97,7 +90,9 @@ def data(model):
         'num_patients': model.num_patients,
         'num_samples_by_patient': num_samples_by_patient,
         'loq': loq,
+        'loqln': np.log(loq),
         'load': load,
+        'loadln': np.log(load),
         'idx': idx,
         'positive': positive,
         'num_positives_by_patient': np.bincount(idx, positive)
