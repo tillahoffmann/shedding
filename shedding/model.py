@@ -1,3 +1,4 @@
+import collections
 import enum
 import functools as ft
 import inspect
@@ -20,7 +21,7 @@ def broadcast_samples(func):
             x, *args = args
             partial = func
 
-        if isinstance(x, list):
+        if not isinstance(x, collections.abc.Mapping):
             return np.asarray([partial(y, *args, **kwargs) for y in x])
         return partial(x, *args, **kwargs)
 
@@ -284,10 +285,16 @@ class Prior:
         return self.from_uniform(u, **self.kwargs)
 
 
-class PositivePrior:
+class PositivePrior(Prior):
     def __init__(self, **kwargs):
         super(PositivePrior, self).__init__(**kwargs)
         self.lower = 0
+
+
+class HalfCauchyPrior(PositivePrior):
+    @classmethod
+    def from_uniform(cls, uniform, scale):
+        return scale * np.tan(np.pi * uniform / 2)
 
 
 class NormalPrior(Prior):
@@ -432,14 +439,14 @@ class Model:
         # Merge the supplied priors and default priors
         self.priors = priors or {}
         default_priors = {
-                'population_scale': LoguniformPrior(-2, 3),
-                'patient_scale': LoguniformPrior(-2, 3),
+                'population_scale': HalfCauchyPrior(scale=1),
+                'patient_scale': HalfCauchyPrior(scale=1),
                 'population_loc': UniformPrior(6, 20)
             }
         if self.parametrisation == Parametrisation.GENERAL:
             default_priors.update({
-                'population_shape': UniformPrior(0, 20),
-                'patient_shape': UniformPrior(0, 5),
+                'population_shape': HalfCauchyPrior(scale=1),
+                'patient_shape': HalfCauchyPrior(scale=1),
             })
         if self.inflated:
             default_priors['rho'] = UniformPrior(0, 1)
@@ -689,9 +696,10 @@ class Model:
         data['positive'] = positive = load >= loq
 
         # Update summary statistics
-        idx = data['idx']
-        data['num_positives_by_patient'] = np.bincount(idx, positive, minlength=num_patients)
-        data['num_negatives_by_patient'] = np.bincount(idx, ~positive, minlength=num_patients)
+        data['num_positives_by_patient'] = np.bincount(data['idx'], positive,
+                                                       minlength=num_patients).astype(int)
+        data['num_negatives_by_patient'] = np.bincount(data['idx'], ~positive,
+                                                       minlength=num_patients).astype(int)
         return data
 
     @broadcast_samples
