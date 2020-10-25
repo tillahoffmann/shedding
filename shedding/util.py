@@ -1,4 +1,5 @@
 import collections
+import functools as ft
 import importlib
 import inspect
 import itertools as it
@@ -9,6 +10,7 @@ import numpy as np
 import re
 from scipy import stats, special
 import sys
+import traceback
 
 
 def skip_doctest(obj):
@@ -323,3 +325,19 @@ def broadcast_shapes(*shapes):
             raise ValueError(f'unmatched dimensions at dimension {maxdim - i}')
         broadcast_shape.append(max(sizes))
     return tuple(reversed(broadcast_shape))
+
+
+def flush_traceback(func):
+    """
+    Decorator to flush the traceback of an exception before the kernel dies.
+    """
+    @ft.wraps(func)
+    def _flush_traceback_wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except:  # noqa: E722
+            traceback.print_exc()
+            sys.stderr.flush()
+            sys.stdout.flush()
+            raise
+    return _flush_traceback_wrapper

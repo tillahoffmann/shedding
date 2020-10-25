@@ -8,8 +8,6 @@ setup(
     install_requires=[
         'numpy',
         'scipy',
-        'pystan<3',
-        'jinja2',
     ],
     extras_require={
         'tests': [
@@ -22,6 +20,7 @@ setup(
             'matplotlib',
             'sphinx',
             'linuxdoc @ git+http://github.com/return42/linuxdoc.git',
+            'jinja2',
         ]
     }
 )
