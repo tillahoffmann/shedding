@@ -274,7 +274,10 @@ class Prior:
         self.upper = None
 
     @classmethod
-    def from_uniform(cls, uniform):
+    def from_uniform(cls, uniform, **kwargs):
+        raise NotImplementedError
+
+    def lpdf(self, x):
         raise NotImplementedError
 
     @property
@@ -295,6 +298,10 @@ class HalfCauchyPrior(PositivePrior):
     @classmethod
     def from_uniform(cls, uniform, scale):
         return scale * np.tan(np.pi * uniform / 2)
+
+    def lpdf(self, x):
+        scale = self.kwargs['scale']
+        return 2 * scale / (np.pi * (scale ** 2 + x ** 2))
 
 
 class NormalPrior(Prior):
@@ -318,6 +325,12 @@ class GengammaPrior(PositivePrior):
         cinv = sigma / q
         return (special.gammaincinv(a, uniform) / a) ** cinv * np.exp(mu)
 
+    def lpdf(self, x, log=False):
+        # Transform to log space if necessary
+        if not log:
+            x = np.log(x)
+        return gengamma_lpdf(**self.kwargs, logx=x)
+
 
 class UniformPrior(Prior):
     def __init__(self, lower, upper):
@@ -328,6 +341,9 @@ class UniformPrior(Prior):
     @classmethod
     def from_uniform(cls, uniform, lower, upper):
         return lower + uniform * (upper - lower)
+
+    def lpdf(self, x):
+        return -np.log(self.upper - self.lower)
 
 
 class LoguniformPrior(UniformPrior):
@@ -729,6 +745,17 @@ class Model:
             return mean
         else:  # pragma: no cover
             raise ValueError(statistic)
+
+    def evaluate_log_joint(self, values, data):
+        # Population and patient shape and scale as well as population loc
+        result = sum(prior.lpdf(values[key]) for key, prior in self.priors.items())
+        # Patient means
+        x = values.get('log_patient_mean')
+        if x is None:
+            x = np.log(values['patient_mean'])
+        result += gengamma_lpdf(values['population_shape'], values['population_loc'],
+                                values['population_scale'], x).sum()
+        return result + self.evaluate_log_likelihood(values, data)
 
     @flush_traceback
     def sample_params_from_vector(self, vector):
