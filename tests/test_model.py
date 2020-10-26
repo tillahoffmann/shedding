@@ -160,3 +160,14 @@ def test_rvs(model, hyperparameters):
     if model.inflated:
         sample = sample[np.isfinite(sample)]
     np.testing.assert_array_less(0, sample)
+<<<<<<< HEAD
+=======
+
+
+def test_log_joint(model, hyperparameters, data):
+    # Generate some data
+    values = dict(hyperparameters)
+    data = model.simulate(values, data, 'new_patients')
+    log_joint = model.evaluate_log_joint(values, data)
+    assert np.isscalar(log_joint) and np.isfinite(log_joint)
+>>>>>>> joint

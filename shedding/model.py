@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+import collections
+>>>>>>> joint
 import enum
 import functools as ft
 import inspect
@@ -20,7 +24,11 @@ def broadcast_samples(func):
             x, *args = args
             partial = func
 
+<<<<<<< HEAD
         if isinstance(x, list):
+=======
+        if not isinstance(x, collections.abc.Mapping):
+>>>>>>> joint
             return np.asarray([partial(y, *args, **kwargs) for y in x])
         return partial(x, *args, **kwargs)
 
@@ -273,7 +281,14 @@ class Prior:
         self.upper = None
 
     @classmethod
+<<<<<<< HEAD
     def from_uniform(cls, uniform):
+=======
+    def from_uniform(cls, uniform, **kwargs):
+        raise NotImplementedError
+
+    def lpdf(self, x):
+>>>>>>> joint
         raise NotImplementedError
 
     @property
@@ -284,12 +299,29 @@ class Prior:
         return self.from_uniform(u, **self.kwargs)
 
 
+<<<<<<< HEAD
 class PositivePrior:
+=======
+class PositivePrior(Prior):
+>>>>>>> joint
     def __init__(self, **kwargs):
         super(PositivePrior, self).__init__(**kwargs)
         self.lower = 0
 
 
+<<<<<<< HEAD
+=======
+class HalfCauchyPrior(PositivePrior):
+    @classmethod
+    def from_uniform(cls, uniform, scale):
+        return scale * np.tan(np.pi * uniform / 2)
+
+    def lpdf(self, x):
+        scale = self.kwargs['scale']
+        return 2 * scale / (np.pi * (scale ** 2 + x ** 2))
+
+
+>>>>>>> joint
 class NormalPrior(Prior):
     @classmethod
     def from_uniform(cls, uniform, mu, sigma):
@@ -311,6 +343,15 @@ class GengammaPrior(PositivePrior):
         cinv = sigma / q
         return (special.gammaincinv(a, uniform) / a) ** cinv * np.exp(mu)
 
+<<<<<<< HEAD
+=======
+    def lpdf(self, x, log=False):
+        # Transform to log space if necessary
+        if not log:
+            x = np.log(x)
+        return gengamma_lpdf(**self.kwargs, logx=x)
+
+>>>>>>> joint
 
 class UniformPrior(Prior):
     def __init__(self, lower, upper):
@@ -322,6 +363,12 @@ class UniformPrior(Prior):
     def from_uniform(cls, uniform, lower, upper):
         return lower + uniform * (upper - lower)
 
+<<<<<<< HEAD
+=======
+    def lpdf(self, x):
+        return -np.log(self.upper - self.lower)
+
+>>>>>>> joint
 
 class LoguniformPrior(UniformPrior):
     def __init__(self, lower, upper, base=None):
@@ -432,14 +479,24 @@ class Model:
         # Merge the supplied priors and default priors
         self.priors = priors or {}
         default_priors = {
+<<<<<<< HEAD
                 'population_scale': LoguniformPrior(-2, 3),
                 'patient_scale': LoguniformPrior(-2, 3),
+=======
+                'population_scale': HalfCauchyPrior(scale=1),
+                'patient_scale': HalfCauchyPrior(scale=1),
+>>>>>>> joint
                 'population_loc': UniformPrior(6, 20)
             }
         if self.parametrisation == Parametrisation.GENERAL:
             default_priors.update({
+<<<<<<< HEAD
                 'population_shape': UniformPrior(0, 20),
                 'patient_shape': UniformPrior(0, 5),
+=======
+                'population_shape': HalfCauchyPrior(scale=1),
+                'patient_shape': HalfCauchyPrior(scale=1),
+>>>>>>> joint
             })
         if self.inflated:
             default_priors['rho'] = UniformPrior(0, 1)
@@ -689,9 +746,16 @@ class Model:
         data['positive'] = positive = load >= loq
 
         # Update summary statistics
+<<<<<<< HEAD
         idx = data['idx']
         data['num_positives_by_patient'] = np.bincount(idx, positive, minlength=num_patients)
         data['num_negatives_by_patient'] = np.bincount(idx, ~positive, minlength=num_patients)
+=======
+        data['num_positives_by_patient'] = np.bincount(data['idx'], positive,
+                                                       minlength=num_patients).astype(int)
+        data['num_negatives_by_patient'] = np.bincount(data['idx'], ~positive,
+                                                       minlength=num_patients).astype(int)
+>>>>>>> joint
         return data
 
     @broadcast_samples
@@ -722,6 +786,20 @@ class Model:
         else:  # pragma: no cover
             raise ValueError(statistic)
 
+<<<<<<< HEAD
+=======
+    def evaluate_log_joint(self, values, data):
+        # Population and patient shape and scale as well as population loc
+        result = sum(prior.lpdf(values[key]) for key, prior in self.priors.items())
+        # Patient means
+        x = values.get('log_patient_mean')
+        if x is None:
+            x = np.log(values['patient_mean'])
+        result += gengamma_lpdf(values['population_shape'], values['population_loc'],
+                                values['population_scale'], x).sum()
+        return result + self.evaluate_log_likelihood(values, data)
+
+>>>>>>> joint
     @flush_traceback
     def sample_params_from_vector(self, vector):
         values = vector_to_values(self.parameters, vector)
