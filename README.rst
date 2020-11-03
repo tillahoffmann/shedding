@@ -29,6 +29,7 @@ Datasets can be found in the ``publications`` directory as JSON files following 
         - :cspan:`2` Patients
         - :cspan:`2` Samples
         - Detailed data
+        - Temporal data
       * - n
         - \+
         - \-
@@ -49,6 +50,7 @@ Datasets can be found in the ``publications`` directory as JSON files following 
         - {{samples.get('positive', '?')}}
         - {{samples.get('negative', '?')}}
         - {{ '\\+' if 'loads' in pub else '\\-' }}
+        - {{ pub.get('temporal', '\\-') }}
       {% endfor -%}
 
 .. plot:: plot_datasets.py

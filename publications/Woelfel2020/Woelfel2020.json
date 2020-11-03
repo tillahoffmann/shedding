@@ -4,6 +4,7 @@
     "doi": "10.1038/s41586-020-2196-x",
     "title": "Virological assessment of hospitalized patients with COVID-2019",
     "loq": 2,
+    "temporal": "symptoms",
     "patients": {
         "n": 9,
         "positive": 8,

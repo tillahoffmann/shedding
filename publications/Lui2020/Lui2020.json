@@ -5,6 +5,7 @@
     "title": "Viral dynamics of SARS-CoV-2 across a spectrum of disease severity in COVID-19",
     "assay": "2019-nCoV_N1",
     "loq": 2.8414345581,
+    "temporal": "symptoms",
     "patients": {
         "n": 11,
         "positive": 11,
