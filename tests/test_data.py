@@ -44,6 +44,10 @@ def test_dataset(filename, schema):
             patient = load.get('patient')
             assert patient < len(patient_details)
 
+    # Check if any samples report temporal information
+    if any('day' in load for load in dataset.get('loads', [])):
+        assert 'temporal' in dataset
+
 
 def test_docs(filename):
     basename, _ = os.path.splitext(filename)

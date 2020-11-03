@@ -3,6 +3,7 @@
     "key": "Jeong et al. 2020",
     "doi": "10.1016/j.cmi.2020.07.020",
     "title": "Viable SARS-CoV-2 in various specimens from COVID-19 patients",
+    "temporal": "symptoms",
     "patients": {
         "n": 5,
         "positive": 3,

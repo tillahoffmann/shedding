@@ -5,6 +5,7 @@
     "title": "Sequential Analysis of Viral Load in a Neonate and Her Mother Infected With Severe Acute Respiratory Syndrome Coronavirus 2",
     "loq": 3.7558748557,
     "assay": "PowerChek-E",
+    "temporal": "symptoms",
     "patients": {
         "n": 2,
         "positive": 2,

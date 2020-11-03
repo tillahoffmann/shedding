@@ -51,6 +51,14 @@
             ],
             "description": "level of quantification, i.e. the smallest possible concentration that can be measured, or `null` if not available"
         },
+        "temporal": {
+            "type": "string",
+            "description": "reference for reporting of temporal information, if available",
+            "enum": [
+                "symptoms",
+                "admission"
+            ]
+        },
         "patients": {
             "type": "object",
             "properties": {
