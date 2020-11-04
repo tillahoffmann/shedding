@@ -12,7 +12,7 @@ import shedding
     np.random.gamma(1, size=3),
 ])
 def qms(request):
-    return request.param
+    return np.asarray(request.param)
 
 
 @pytest.fixture
@@ -109,7 +109,7 @@ def test_model_from_vector(model, data):
 def hyperparameters(model):
     if model.parametrisation == shedding.Parametrisation.LOGNORMAL:
         params = {'patient_scale': 1, 'population_scale': 1, 'population_loc': 1,
-                  'patient_shape': 0, 'population_shape': 0}
+                  'patient_shape': np.float64(0), 'population_shape': np.float64(0)}
     elif model.parametrisation == shedding.Parametrisation.GAMMA:
         params = {'patient_scale': 2, 'population_scale': 3, 'population_loc': 1,
                   'patient_shape': 2, 'population_shape': 3}
@@ -160,3 +160,22 @@ def test_rvs(model, hyperparameters):
     if model.inflated:
         sample = sample[np.isfinite(sample)]
     np.testing.assert_array_less(0, sample)
+
+
+def test_log_joint(model, hyperparameters, data):
+    # Generate some data
+    values = dict(hyperparameters)
+    data = model.simulate(values, data, 'new_patients')
+    log_joint = model.evaluate_log_joint(values, data)
+    assert np.isscalar(log_joint) and np.isfinite(log_joint)
+
+
+def test_transform(model):
+    transform = shedding.DefaultTransformation()
+    original = {key: np.random.normal(0, 1, value) for key, value in model.parameters.items()}
+    transformed = transform(original)
+    recovered = transform.inverse(transformed)
+
+    assert set(original) == set(recovered)
+    for key, actual in recovered.items():
+        np.testing.assert_allclose(actual, original[key], err_msg=key)

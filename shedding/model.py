@@ -176,95 +176,98 @@ _LN_PDF_CONSTANT = np.log(2 * np.pi) / 2
 _SQRT2 = np.sqrt(2)
 
 
-def lognormal_lpdf(mu, sigma, logx):
-    """
-    Evaluate the natural logarithm of the lognormal probability density function.
-    """
-    result = _LN_PDF_CONSTANT + np.log(sigma) + np.square((mu - logx) / sigma) / 2 + logx
-    return - result
-
-
-def lognormal_lcdf(mu, sigma, logx):
-    """
-    Evaluate the natural logarithm of the lognormal cumulative distribution function.
-    """
-    cdf = special.erfc((mu - logx) / (sigma * _SQRT2)) / 2
-    return np.log(cdf)
-
-
-def lognormal_mean(mu, sigma):
-    """
-    Evaluate the mean of the lognormal distribution.
-    """
-    return np.exp(mu + sigma * sigma / 2)
-
-
-def lognormal_loc(sigma, mean):
-    """
-    Evaluate the lognormal location parameter given the mean.
-    """
-    return np.log(mean) - sigma * sigma / 2
-
-
-def _gengamma_lpdf(q, mu, sigma, logx):
-    """
+def gengamma_lpdf(q, mu, sigma, logx, qmin=1e-6):
+    r"""
     Evaluate the natural logarithm of the generalised gamma pdf.
+
+    Parameters
+    ----------
+    q :
+        Shape of the generalised gamma distribution.
+    mu :
+        Location of the generalised gamma distribution.
+    sigma :
+        Scale of the generalised gamma distribution.
+    qmin :
+        Threshold below which the generalised gamma is evaluated
+        using a normal approximation.
+
+    Notes
+    -----
+    A generalised gamma random variable :math:`x` can be generated as
+
+    :: math..
+
+       x = \exp\left(mu + \frac{\sigma}{q}\log\left[q^2\gamma\right]\right),
+
+    where :math:`\gamma` follows a standard gamma distribution with shape
+    parameter :math:`a = q^{-2}`. The gamma random variable has mean
+    :math:`q^{-2}` and standard deviation :math:`1/q` such that :math:`q^2\gamma`
+    has unit mean and standard deviation :math:`q`. For sufficiently small :math:`q`,
+    we can approximate :math:`q^2\gamma\approx 1 + q s`, where :math:`s` is a
+    standard normal distribution. Thus,
+
+    :: math..
+
+       x \approx \exp(\mu + \frac{\sigma}{q} \log\left[1 + q s\right]),
+
+    which allows us to evaluate the pdf in a numerically stable fashion.
     """
+    # Evaluate summary statistics
     a = 1 / (q * q)
     c = q / sigma
-    return np.log(c) - special.gammaln(a) + a * np.log(a) + (a * c - 1) * logx - \
-        a * (mu * c + np.exp(c * (logx - mu)))
+    logc = np.log(c)
+    z = (logx - mu) / sigma
+    qz = q * z
+    # Evaluate the generalised gamma lpdf
+    lpdf1 = logc - special.gammaln(a) + a * np.log(a) + (a * c - 1) * logx - \
+        a * (mu * c + np.exp(qz))
+    # Evaluate for small q close to the lognormal limit
+    s = np.where(qz > qmin, np.expm1(qz) / q, z + q * z * z / 2)
+    lpdf2 = - _LN_PDF_CONSTANT - np.log(sigma) - s * s / 2 + qz - logx
+    return np.where(q > qmin, lpdf1, lpdf2)
 
 
-def _gengamma_lcdf(q, mu, sigma, logx):
+def gengamma_lcdf(q, mu, sigma, logx, qmin=1e-6):
     """
     Evaluate the natural logarithm of the generalised gamma cdf.
     """
     a = 1 / (q * q)
-    c = q / sigma
-    logarg = c * (logx - mu)
-    arg = a * np.exp(logarg)
-    cdf = special.gammainc(a, arg)
-    return np.log(cdf)
+    z = (logx - mu) / sigma
+    qz = q * z
+    arg = a * np.exp(qz)
+    cdf1 = special.gammainc(a, arg)
+    s = np.where(qz > qmin, np.expm1(qz) / q, z + q * z * z / 2)
+    cdf2 = (1 + special.erf(s / _SQRT2)) / 2
+    return np.log(np.where(q > qmin, cdf1, cdf2))
 
 
-def _gengamma_mean(q, mu, sigma):
+def gengamma_mean(q, mu, sigma, qmin=1e-6):
     """
     Evaluate the mean of the generalised gamma distribution.
     """
     a = 1 / q ** 2
     cinv = sigma / q
-    log_mean = mu - np.log(a) * cinv + special.gammaln(a + cinv) - special.gammaln(a)
+    sigma2 = np.square(sigma)
+    summand1 = special.gammaln(a + cinv) - special.gammaln(a) - np.log(a) * cinv
+    # Obtained by expanding the line above to sixth order in q about q = 0
+    summand2 = sigma2 / 2 - q * sigma / 6 * (sigma2 + 3)
+    summand = np.where(q > qmin, summand1, summand2)
+    log_mean = mu + summand
     return np.exp(log_mean)
 
 
-def _gengamma_loc(q, sigma, mean):
+def gengamma_loc(q, sigma, mean, qmin=1e-6):
     """
     Evaluate the scale of the generalised gamma distribution for given shape, exponent, and mean.
     """
     a = 1 / q ** 2
-    c = q / sigma
-    mu = np.log(a) / c + special.gammaln(a) - special.gammaln(a + 1 / c)
-    return mu + np.log(mean)
-
-
-def q_branch(gengamma, lognormal):
-    """
-    Generate a function that uses `lognormal` when the first argument is zero and `gengamma`
-    otherwise. This wrapper does not support broadcasting with respect to the first argument.
-    """
-    @ft.wraps(gengamma)
-    def _q_branch_wrapper(q, *args, **kwargs):
-        if q == 0:
-            return lognormal(*args, **kwargs)
-        return gengamma(q, *args, **kwargs)
-    return _q_branch_wrapper
-
-
-gengamma_lpdf = q_branch(_gengamma_lpdf, lognormal_lpdf)
-gengamma_lcdf = q_branch(_gengamma_lcdf, lognormal_lcdf)
-gengamma_mean = q_branch(_gengamma_mean, lognormal_mean)
-gengamma_loc = q_branch(_gengamma_loc, lognormal_loc)
+    cinv = sigma / q
+    sigma2 = np.square(sigma)
+    summand1 = special.gammaln(a + cinv) - special.gammaln(a) - np.log(a) * cinv
+    summand2 = sigma2 / 2 - q * sigma / 6 * (sigma2 + 3)
+    summand = np.where(q > qmin, summand1, summand2)
+    return np.log(mean) - summand
 
 
 class Prior:
@@ -274,7 +277,10 @@ class Prior:
         self.upper = None
 
     @classmethod
-    def from_uniform(cls, uniform):
+    def from_uniform(cls, uniform, **kwargs):
+        raise NotImplementedError
+
+    def lpdf(self, x):
         raise NotImplementedError
 
     @property
@@ -296,11 +302,15 @@ class HalfCauchyPrior(PositivePrior):
     def from_uniform(cls, uniform, scale):
         return scale * np.tan(np.pi * uniform / 2)
 
+    def lpdf(self, x):
+        scale = self.kwargs['scale']
+        return 2 * scale / (np.pi * (scale ** 2 + x ** 2))
+
 
 class NormalPrior(Prior):
     @classmethod
     def from_uniform(cls, uniform, mu, sigma):
-        return mu + sigma * np.sqrt(2) * special.erfinv(2 * uniform - 1)
+        return mu + sigma * _SQRT2 * special.erfinv(2 * uniform - 1)
 
 
 class LognormalPrior(PositivePrior):
@@ -318,6 +328,12 @@ class GengammaPrior(PositivePrior):
         cinv = sigma / q
         return (special.gammaincinv(a, uniform) / a) ** cinv * np.exp(mu)
 
+    def lpdf(self, x, log=False):
+        # Transform to log space if necessary
+        if not log:
+            x = np.log(x)
+        return gengamma_lpdf(**self.kwargs, logx=x)
+
 
 class UniformPrior(Prior):
     def __init__(self, lower, upper):
@@ -328,6 +344,9 @@ class UniformPrior(Prior):
     @classmethod
     def from_uniform(cls, uniform, lower, upper):
         return lower + uniform * (upper - lower)
+
+    def lpdf(self, x):
+        return -np.log(self.upper - self.lower)
 
 
 class LoguniformPrior(UniformPrior):
@@ -385,6 +404,66 @@ class SimulationMode(enum.Enum):
     """
     NEW_PATIENTS = 'new_patients'
     EXISTING_PATIENTS = 'existing_patients'
+
+
+class Transformation:
+    r"""
+    A bijective transformation :math:`y = f(x)` for regular variables :math:`x` and transformed
+    variables :math:`y`. For sampling purposes, the transformation induces a volume compression or
+    expansion that needs to be accounted for, i.e.
+
+    .. math::
+
+       \log P(y) = \log P(x=f^{-1}(y)) + \log \frac{dx}{dy}.
+    """
+    def __call__(self, values):
+        """
+        Transform from the transformed space to the regular space.
+        """
+        raise NotImplementedError
+
+    def inverse(self, values):
+        """
+        Transform from the regular space to the transformed space.
+        """
+        raise NotImplementedError
+
+    def jacobianlogdet(self, values):
+        """
+        Evaluate the logarithm of the Jacobian determinant to account for sampling in the
+        transformed space rather than the regular space.
+        """
+        raise NotImplementedError
+
+
+class DefaultTransformation:
+    POSITIVE_KEYS = ['patient_mean', 'patient_shape', 'patient_scale',
+                     'population_shape', 'population_scale']
+
+    def __call__(self, values):
+        result = dict(values)
+        result.update({key: np.exp(values[key]) for key in self.POSITIVE_KEYS if key in values})
+        # Transform to the unit interval if required
+        logit = values.get('rho')
+        if logit is not None:
+            result['rho'] = special.expit(logit)
+        return result
+
+    def inverse(self, values):
+        result = dict(values)
+        result.update({key: np.log(values[key]) for key in self.POSITIVE_KEYS if key in values})
+        rho = values.get('rho')
+        if rho is not None:
+            result['rho'] = special.logit(rho)
+        return result
+
+    def jacobianlogdet(self, values):
+        logdet = sum(values[key].sum() for key in self.POSITIVE_KEYS)
+        # Account for logit transform if required
+        logit = values.get('rho')
+        if logit is not None:
+            logdet += logit - 2 * np.log1p(np.exp(logit))
+        return logdet
 
 
 class Model:
@@ -729,6 +808,17 @@ class Model:
             return mean
         else:  # pragma: no cover
             raise ValueError(statistic)
+
+    def evaluate_log_joint(self, values, data):
+        # Population and patient shape and scale as well as population loc
+        result = sum(prior.lpdf(values[key]) for key, prior in self.priors.items())
+        # Patient means
+        x = values.get('log_patient_mean')
+        if x is None:
+            x = np.log(values['patient_mean'])
+        result += gengamma_lpdf(values['population_shape'], values['population_loc'],
+                                values['population_scale'], x).sum()
+        return result + self.evaluate_log_likelihood(values, data)
 
     @flush_traceback
     def sample_params_from_vector(self, vector):
