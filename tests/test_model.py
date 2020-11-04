@@ -48,15 +48,16 @@ def test_gengamma_loc(qms):
     np.testing.assert_allclose(loc, mu)
 
 
-def test_vector_values_roundtrip():
+@pytest.mark.parametrize('batch', [(), (7,), (10, 11,)])
+def test_vector_values_roundtrip(batch):
     parameters = {
         'x': (),
         'y': (10,),
         'z': (3, 4),
     }
-    values = {key: np.random.normal(size=shape) for key, shape in parameters.items()}
+    values = {key: np.random.normal(size=batch + shape) for key, shape in parameters.items()}
     vector = shedding.values_to_vector(parameters, values)
-    assert vector.size == 23
+    assert vector.size == 23 * np.prod(batch)
     reconstructed = shedding.vector_to_values(parameters, vector)
     [np.testing.assert_allclose(value, values[key]) for key, value in reconstructed.items()]
 

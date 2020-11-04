@@ -68,18 +68,23 @@ def values_to_vector(parameters, values, size=None):
         Vector of parameters corresponding to `values`.
     """
     size = size or evaluate_size(parameters)
-    vector = np.empty(size)
+    vector = None
     offset = 0
     for key, shape in parameters.items():
         value = values[key]
+        if vector is None:
+            base_shape = np.shape(value)
+            if shape:
+                base_shape = base_shape[:-len(shape)]
+            vector = np.empty(base_shape + (size,))
         if not shape:
-            vector[offset] = value
+            vector[..., offset] = value
             offset += 1
             continue
         if len(shape) > 1:
-            value = np.ravel(value)
-        vector[offset:offset + value.size] = value
-        offset += value.size
+            value = np.reshape(value, base_shape + (-1,))
+        vector[..., offset:offset + value.shape[-1]] = value
+        offset += value.shape[-1]
     return vector
 
 
@@ -101,17 +106,18 @@ def vector_to_values(parameters, vector):
     """
     values = {}
     offset = 0
+    base_shape = np.shape(vector)[:-1]
     for key, shape in parameters.items():
         if not shape:
-            values[key] = vector[offset]
+            values[key] = vector[..., offset]
             offset += 1
             continue
         size = 1
         for dim in shape:
             size *= dim
-        value = vector[offset:offset + size]
+        value = vector[..., offset:offset + size]
         if len(shape) > 1:
-            value = np.reshape(value, shape)
+            value = np.reshape(value, base_shape + shape)
         values[key] = value
         offset += size
     return values
@@ -473,6 +479,7 @@ def _augment_values(func):
     """
     @ft.wraps(func)
     def _augment_wrapper(self, values, *args, **kwargs):
+        values = dict(values)
         if self.parametrisation == Parametrisation.LOGNORMAL:
             values.update({
                 'population_shape': np.float64(0),
