@@ -458,12 +458,38 @@ class DefaultTransformation:
         return result
 
     def jacobianlogdet(self, values):
-        logdet = sum(values[key].sum() for key in self.POSITIVE_KEYS)
+        logdet = sum(values[key].sum() for key in self.POSITIVE_KEYS if key in values)
         # Account for logit transform if required
         logit = values.get('rho')
         if logit is not None:
             logdet += logit - 2 * np.log1p(np.exp(logit))
         return logdet
+
+
+def _augment_values(func):
+    """
+    Decorator to augment the values by adding the population and patient shapes based on the
+    parametrisation.
+    """
+    @ft.wraps(func)
+    def _augment_wrapper(self, values, *args, **kwargs):
+        if self.parametrisation == Parametrisation.LOGNORMAL:
+            values.update({
+                'population_shape': np.float64(0),
+                'patient_shape': np.float64(0),
+            })
+        elif self.parametrisation == Parametrisation.WEIBULL:
+            values.update({
+                'population_shape': 1,
+                'patient_shape': 1,
+            })
+        elif self.parametrisation == Parametrisation.GAMMA:
+            values.update({
+                    'population_shape': values['population_scale'],
+                    'patient_shape': values['patient_scale'],
+                })
+        return func(self, values, *args, **kwargs)
+    return _augment_wrapper
 
 
 class Model:
@@ -504,13 +530,16 @@ class Model:
         self.inflated = inflated
         # Using Stacey's parametrisation
         self.parameters = {
-            'population_shape': (),
             'population_loc': (),
             'population_scale': (),
-            'patient_shape': (),
             'patient_scale': (),
             'patient_mean': (num_patients,)
         }
+        if self.parametrisation == Parametrisation.GENERAL:
+            self.parameters.update({
+                'population_shape': (),
+                'patient_shape': (),
+            })
         if self.inflated:
             self.parameters['rho'] = ()
         self.size = evaluate_size(self.parameters)
@@ -539,34 +568,23 @@ class Model:
         population_scale = self.priors['population_scale'](values['population_scale'])
         patient_scale = self.priors['patient_scale'](values['patient_scale'])
 
-        if self.parametrisation == Parametrisation.GENERAL:
-            population_shape = self.priors['population_shape'](values['population_shape'])
-            patient_shape = self.priors['patient_shape'](values['patient_shape'])
-        elif self.parametrisation == Parametrisation.GAMMA:
-            # We get a regular gamma distribution when the shape and scale are equal (c = 1)
-            population_shape = population_scale
-            patient_shape = patient_scale
-        elif self.parametrisation == Parametrisation.WEIBULL:
-            # We get a Weibull distribution when the gamma random variable reduces to an exponential
-            population_shape = 1
-            patient_shape = 1
-        elif self.parametrisation == Parametrisation.LOGNORMAL:
-            # We get a lognormal when the gamma random variable becomes a sharp Gaussian
-            population_shape = 0
-            patient_shape = 0
-        else:  # pragma: no cover
-            raise ValueError(self.parametrisation)
         values.update({
-            'population_shape': population_shape,
             'population_scale': population_scale,
             'population_loc': self.priors['population_loc'](values['population_loc']),
-            'patient_shape': patient_shape,
             'patient_scale': patient_scale,
         })
+
+        if self.parametrisation == Parametrisation.GENERAL:
+            values.update({
+                'population_shape': self.priors['population_shape'](values['population_shape']),
+                'patient_shape': self.priors['patient_shape'](values['patient_shape']),
+            })
+
         if self.inflated:
             values['rho'] = self.priors['rho'](values['rho'])
         return values
 
+    @_augment_values
     def sample_individual_params(self, values):
         """
         Sample individual-level parameters.
@@ -577,6 +595,7 @@ class Model:
             values['population_scale'])
         return values
 
+    @_augment_values
     def sample_params(self, values):
         """
         Sample shared and individual-level parameters from the hierarchical prior.
@@ -585,6 +604,7 @@ class Model:
         self.sample_individual_params(values)
         return values
 
+    @_augment_values
     def _evaluate_sample_log_likelihood(self, values, data):
         """
         Evaluate the log likelihood for each sample conditional on all model parameters, assuming
@@ -610,6 +630,7 @@ class Model:
         lcdf = gengamma_lcdf(q, mu, sigma, data['loqln'])
         return np.where(data['positive'], lpdf, lcdf)
 
+    @_augment_values
     def _evaluate_patient_log_likelihood(self, values, data):
         """
         Evaluate the log likelihood for each patient conditional on all model parameters, assuming
@@ -618,6 +639,7 @@ class Model:
         result = self._evaluate_sample_log_likelihood(values, data)
         return np.bincount(data['idx'], result, minlength=data['num_patients'])
 
+    @_augment_values
     def evaluate_log_likelihood(self, values, data):
         """
         Evaluate the log likelihood of the data conditional on all model parameters.
@@ -632,6 +654,7 @@ class Model:
         return patient_contrib.sum()
 
     @broadcast_samples
+    @_augment_values
     def evaluate_marginal_log_likelihood(self, values, data, n=1000, **kwargs):
         """
         Evaluate the log likelihood of the observed data marginalised with respect to group-level
@@ -680,6 +703,7 @@ class Model:
         return patient_likelihood
 
     @broadcast_samples
+    @_augment_values
     def rvs(self, values, size=None):
         """
         Draw a sample from the posterior predictive distribution.
@@ -714,6 +738,7 @@ class Model:
         return np.where(z, sample, np.nan)
 
     @broadcast_samples
+    @_augment_values
     def simulate(self, values, data, simulation_mode):
         """
         Generate simulated data for a posterior sample.
@@ -782,6 +807,7 @@ class Model:
         return data
 
     @broadcast_samples
+    @_augment_values
     def evaluate_statistic(self, values, statistic):
         """
         Evaluate a statistic of the model.
@@ -809,6 +835,7 @@ class Model:
         else:  # pragma: no cover
             raise ValueError(statistic)
 
+    @_augment_values
     def evaluate_log_joint(self, values, data):
         # Population and patient shape and scale as well as population loc
         result = sum(prior.lpdf(values[key]) for key, prior in self.priors.items())
