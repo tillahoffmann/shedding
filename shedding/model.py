@@ -479,7 +479,6 @@ def _augment_values(func):
     """
     @ft.wraps(func)
     def _augment_wrapper(self, values, *args, **kwargs):
-        values = dict(values)
         if self.parametrisation == Parametrisation.LOGNORMAL:
             values.update({
                 'population_shape': np.float64(0),
@@ -572,23 +571,8 @@ class Model:
         """
         Sample parameters that are shared amongst individuals.
         """
-        population_scale = self.priors['population_scale'](values['population_scale'])
-        patient_scale = self.priors['patient_scale'](values['patient_scale'])
-
-        values.update({
-            'population_scale': population_scale,
-            'population_loc': self.priors['population_loc'](values['population_loc']),
-            'patient_scale': patient_scale,
-        })
-
-        if self.parametrisation == Parametrisation.GENERAL:
-            values.update({
-                'population_shape': self.priors['population_shape'](values['population_shape']),
-                'patient_shape': self.priors['patient_shape'](values['patient_shape']),
-            })
-
-        if self.inflated:
-            values['rho'] = self.priors['rho'](values['rho'])
+        values.update({key: self.priors[key](value) for key, value in values.items()
+                       if key != 'patient_mean'})
         return values
 
     @_augment_values
@@ -602,7 +586,6 @@ class Model:
             values['population_scale'])
         return values
 
-    @_augment_values
     def sample_params(self, values):
         """
         Sample shared and individual-level parameters from the hierarchical prior.
