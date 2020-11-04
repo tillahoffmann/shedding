@@ -19,8 +19,10 @@ clean :
 
 # Generate pinned dependencies
 requirements.txt : requirements.in setup.py
+ifndef CI
 	pip-compile -v --upgrade
 	pip-sync
+endif
 
 # Build the repository using a GitHub action for local debugging
 # (cf. https://github.com/nektos/act)
