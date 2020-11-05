@@ -244,9 +244,9 @@ def gengamma_lcdf(q, mu, sigma, logx, qmin=1e-6):
     z = (logx - mu) / sigma
     qz = q * z
     arg = a * tf.math.exp(qz)
-    cdf1 = special.gammainc(a, arg)
+    cdf1 = tf.math.igamma(a, arg)
     s = tf.where(qz > qmin, tf.math.expm1(qz) / q, z + q * z * z / 2)
-    cdf2 = (1 + special.erf(s / _SQRT2)) / 2
+    cdf2 = (1 + tf.math.erf(s / _SQRT2)) / 2
     return tf.math.log(tf.where(q > qmin, cdf1, cdf2))
 
 
@@ -318,7 +318,7 @@ class HalfCauchyPrior(PositivePrior):
 class NormalPrior(Prior):
     @classmethod
     def from_uniform(cls, uniform, mu, sigma):
-        return mu + sigma * _SQRT2 * special.erfinv(2 * uniform - 1)
+        return mu + sigma * _SQRT2 * tf.math.erfinv(2 * uniform - 1)
 
 
 class LognormalPrior(PositivePrior):
@@ -455,7 +455,7 @@ class DefaultTransformation:
         # Transform to the unit interval if required
         logit = values.get('rho')
         if logit is not None:
-            result['rho'] = special.expit(logit)
+            result['rho'] = tf.math.sigmoid(logit)
         return result
 
     def inverse(self, values):
@@ -464,7 +464,7 @@ class DefaultTransformation:
                        if key in values})
         rho = values.get('rho')
         if rho is not None:
-            result['rho'] = special.logit(rho)
+            result['rho'] = tf.math.log(rho) - tf.math.log1p(-rho)
         return result
 
     def jacobianlogdet(self, values):
@@ -631,7 +631,7 @@ class Model:
         that all patients shed virus.
         """
         result = self._evaluate_sample_log_likelihood(values, data)
-        return tf.math.bincount(data['idx'], result, minlength=data['num_patients'], axis=-1)
+        return tf.math.bincount(data['idx'], result, minlength=data['num_patients'])
 
     @_augment_values
     def evaluate_log_likelihood(self, values, data):
