@@ -8,6 +8,7 @@ setup(
     install_requires=[
         'numpy',
         'scipy',
+        'tf-nightly',
     ],
     extras_require={
         'tests': [

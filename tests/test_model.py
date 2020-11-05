@@ -110,7 +110,7 @@ def test_model_from_vector(model, data):
 def hyperparameters(model):
     if model.parametrisation == shedding.Parametrisation.LOGNORMAL:
         params = {'patient_scale': 1, 'population_scale': 1, 'population_loc': 1,
-                  'patient_shape': np.float64(0), 'population_shape': np.float64(0)}
+                  'patient_shape': 0, 'population_shape': 0}
     elif model.parametrisation == shedding.Parametrisation.GAMMA:
         params = {'patient_scale': 2, 'population_scale': 3, 'population_loc': 1,
                   'patient_shape': 2, 'population_shape': 3}
@@ -124,7 +124,7 @@ def hyperparameters(model):
         raise ValueError(model)
     if model.inflated:
         params['rho'] = 0.9
-    return params
+    return {key: np.float64(value) for key, value in params.items()}
 
 
 def test_simulate(model, hyperparameters, data):
@@ -167,7 +167,7 @@ def test_log_joint(model, hyperparameters, data):
     # Generate some data
     values = dict(hyperparameters)
     data = model.simulate(values, data, 'new_patients')
-    log_joint = model.evaluate_log_joint(values, data)
+    log_joint = model.evaluate_log_joint(values, data).numpy()
     assert np.isscalar(log_joint) and np.isfinite(log_joint)
 
 

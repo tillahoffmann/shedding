@@ -3,6 +3,8 @@ import enum
 import functools as ft
 import inspect
 import numpy as np
+import tensorflow as tf
+from tensorflow.experimental.numpy import logaddexp as tf_logaddexp
 from scipy import special
 from .util import flush_traceback, softmax, logmeanexp
 
@@ -222,16 +224,16 @@ def gengamma_lpdf(q, mu, sigma, logx, qmin=1e-6):
     # Evaluate summary statistics
     a = 1 / (q * q)
     c = q / sigma
-    logc = np.log(c)
+    logc = tf.math.log(c)
     z = (logx - mu) / sigma
     qz = q * z
     # Evaluate the generalised gamma lpdf
-    lpdf1 = logc - special.gammaln(a) + a * np.log(a) + (a * c - 1) * logx - \
-        a * (mu * c + np.exp(qz))
+    lpdf1 = logc - tf.math.lgamma(a) + a * tf.math.log(a) + (a * c - 1) * logx - \
+        a * (mu * c + tf.math.exp(qz))
     # Evaluate for small q close to the lognormal limit
-    s = np.where(qz > qmin, np.expm1(qz) / q, z + q * z * z / 2)
-    lpdf2 = - _LN_PDF_CONSTANT - np.log(sigma) - s * s / 2 + qz - logx
-    return np.where(q > qmin, lpdf1, lpdf2)
+    s = tf.where(qz > qmin, tf.math.expm1(qz) / q, z + q * z * z / 2)
+    lpdf2 = - _LN_PDF_CONSTANT - tf.math.log(sigma) - s * s / 2 + qz - logx
+    return tf.where(q > qmin, lpdf1, lpdf2)
 
 
 def gengamma_lcdf(q, mu, sigma, logx, qmin=1e-6):
@@ -241,11 +243,11 @@ def gengamma_lcdf(q, mu, sigma, logx, qmin=1e-6):
     a = 1 / (q * q)
     z = (logx - mu) / sigma
     qz = q * z
-    arg = a * np.exp(qz)
+    arg = a * tf.math.exp(qz)
     cdf1 = special.gammainc(a, arg)
-    s = np.where(qz > qmin, np.expm1(qz) / q, z + q * z * z / 2)
+    s = tf.where(qz > qmin, tf.math.expm1(qz) / q, z + q * z * z / 2)
     cdf2 = (1 + special.erf(s / _SQRT2)) / 2
-    return np.log(np.where(q > qmin, cdf1, cdf2))
+    return tf.math.log(tf.where(q > qmin, cdf1, cdf2))
 
 
 def gengamma_mean(q, mu, sigma, qmin=1e-6):
@@ -254,13 +256,13 @@ def gengamma_mean(q, mu, sigma, qmin=1e-6):
     """
     a = 1 / q ** 2
     cinv = sigma / q
-    sigma2 = np.square(sigma)
-    summand1 = special.gammaln(a + cinv) - special.gammaln(a) - np.log(a) * cinv
+    sigma2 = sigma * sigma
+    summand1 = tf.math.lgamma(a + cinv) - tf.math.lgamma(a) - tf.math.log(a) * cinv
     # Obtained by expanding the line above to sixth order in q about q = 0
     summand2 = sigma2 / 2 - q * sigma / 6 * (sigma2 + 3)
-    summand = np.where(q > qmin, summand1, summand2)
+    summand = tf.where(q > qmin, summand1, summand2)
     log_mean = mu + summand
-    return np.exp(log_mean)
+    return tf.math.exp(log_mean)
 
 
 def gengamma_loc(q, sigma, mean, qmin=1e-6):
@@ -269,11 +271,11 @@ def gengamma_loc(q, sigma, mean, qmin=1e-6):
     """
     a = 1 / q ** 2
     cinv = sigma / q
-    sigma2 = np.square(sigma)
-    summand1 = special.gammaln(a + cinv) - special.gammaln(a) - np.log(a) * cinv
+    sigma2 = sigma * sigma
+    summand1 = tf.math.lgamma(a + cinv) - tf.math.lgamma(a) - tf.math.log(a) * cinv
     summand2 = sigma2 / 2 - q * sigma / 6 * (sigma2 + 3)
-    summand = np.where(q > qmin, summand1, summand2)
-    return np.log(mean) - summand
+    summand = tf.where(q > qmin, summand1, summand2)
+    return tf.math.log(mean) - summand
 
 
 class Prior:
@@ -306,7 +308,7 @@ class PositivePrior(Prior):
 class HalfCauchyPrior(PositivePrior):
     @classmethod
     def from_uniform(cls, uniform, scale):
-        return scale * np.tan(np.pi * uniform / 2)
+        return scale * tf.math.tan(np.pi * uniform / 2)
 
     def lpdf(self, x):
         scale = self.kwargs['scale']
@@ -322,7 +324,7 @@ class NormalPrior(Prior):
 class LognormalPrior(PositivePrior):
     @classmethod
     def from_uniform(cls, uniform, mu, sigma):
-        return np.exp(NormalPrior.from_uniform(uniform, mu, sigma))
+        return tf.math.exp(NormalPrior.from_uniform(uniform, mu, sigma))
 
 
 class GengammaPrior(PositivePrior):
@@ -332,12 +334,12 @@ class GengammaPrior(PositivePrior):
             return LognormalPrior.from_uniform(uniform, mu, sigma)
         a = 1 / (q * q)
         cinv = sigma / q
-        return (special.gammaincinv(a, uniform) / a) ** cinv * np.exp(mu)
+        return (tf.math.igamma(a, uniform) / a) ** cinv * tf.math.exp(mu)
 
     def lpdf(self, x, log=False):
         # Transform to log space if necessary
         if not log:
-            x = np.log(x)
+            x = tf.math.log(x)
         return gengamma_lpdf(**self.kwargs, logx=x)
 
 
@@ -352,7 +354,7 @@ class UniformPrior(Prior):
         return lower + uniform * (upper - lower)
 
     def lpdf(self, x):
-        return -np.log(self.upper - self.lower)
+        return -tf.math.log(self.upper - self.lower)
 
 
 class LoguniformPrior(UniformPrior):
@@ -372,8 +374,8 @@ def from_abc(a, b, c):
     Transform from the parametrisation in terms of shape, scale, and exponent to Stacey's
     parametrisation.
     """
-    q = 1 / np.sqrt(a)
-    mu = np.log(a / b) / c
+    q = 1 / tf.math.sqrt(a)
+    mu = tf.math.log(a / b) / c
     sigma = q / c
     return q, mu, sigma
 
@@ -385,7 +387,7 @@ def to_abc(q, mu, sigma):
     """
     a = 1 / q ** 2
     c = q / sigma
-    b = None if mu is None else a * np.exp(- mu * c)
+    b = None if mu is None else a * tf.math.exp(- mu * c)
     return a, b, c
 
 
@@ -448,7 +450,8 @@ class DefaultTransformation:
 
     def __call__(self, values):
         result = dict(values)
-        result.update({key: np.exp(values[key]) for key in self.POSITIVE_KEYS if key in values})
+        result.update({key: tf.math.exp(values[key]) for key in self.POSITIVE_KEYS
+                       if key in values})
         # Transform to the unit interval if required
         logit = values.get('rho')
         if logit is not None:
@@ -457,18 +460,19 @@ class DefaultTransformation:
 
     def inverse(self, values):
         result = dict(values)
-        result.update({key: np.log(values[key]) for key in self.POSITIVE_KEYS if key in values})
+        result.update({key: tf.math.log(values[key]) for key in self.POSITIVE_KEYS
+                       if key in values})
         rho = values.get('rho')
         if rho is not None:
             result['rho'] = special.logit(rho)
         return result
 
     def jacobianlogdet(self, values):
-        logdet = sum(values[key].sum() for key in self.POSITIVE_KEYS if key in values)
+        logdet = sum(tf.reduce_sum(values[key]) for key in self.POSITIVE_KEYS if key in values)
         # Account for logit transform if required
         logit = values.get('rho')
         if logit is not None:
-            logdet += logit - 2 * np.log1p(np.exp(logit))
+            logdet += logit - 2 * tf.math.log1p(tf.math.exp(logit))
         return logdet
 
 
@@ -486,8 +490,8 @@ def _augment_values(func):
             })
         elif self.parametrisation == Parametrisation.WEIBULL:
             values.update({
-                'population_shape': 1,
-                'patient_shape': 1,
+                'population_shape': np.float64(1),
+                'patient_shape': np.float64(1),
             })
         elif self.parametrisation == Parametrisation.GAMMA:
             values.update({
@@ -555,7 +559,7 @@ class Model:
         default_priors = {
                 'population_scale': HalfCauchyPrior(scale=1),
                 'patient_scale': HalfCauchyPrior(scale=1),
-                'population_loc': UniformPrior(6, 20)
+                'population_loc': UniformPrior(np.float64(6), np.float64(20))
             }
         if self.parametrisation == Parametrisation.GENERAL:
             default_priors.update({
@@ -563,7 +567,7 @@ class Model:
                 'patient_shape': HalfCauchyPrior(scale=1),
             })
         if self.inflated:
-            default_priors['rho'] = UniformPrior(0, 1)
+            default_priors['rho'] = UniformPrior(np.float64(0), np.float64(1))
         for key, prior in default_priors.items():
             self.priors.setdefault(key, prior)
 
@@ -615,10 +619,10 @@ class Model:
         q = values['patient_shape']
         sigma = values['patient_scale']
         mu = gengamma_loc(q, sigma, values['patient_mean'])
-        mu = np.repeat(mu, data['num_samples_by_patient'], axis=-1)
+        mu = tf.repeat(mu, data['num_samples_by_patient'], axis=-1)
         lpdf = gengamma_lpdf(q, mu, sigma, data['loadln'])
         lcdf = gengamma_lcdf(q, mu, sigma, data['loqln'])
-        return np.where(data['positive'], lpdf, lcdf)
+        return tf.where(data['positive'], lpdf, lcdf)
 
     @_augment_values
     def _evaluate_patient_log_likelihood(self, values, data):
@@ -627,7 +631,7 @@ class Model:
         that all patients shed virus.
         """
         result = self._evaluate_sample_log_likelihood(values, data)
-        return np.bincount(data['idx'], result, minlength=data['num_patients'])
+        return tf.math.bincount(data['idx'], result, minlength=data['num_patients'], axis=-1)
 
     @_augment_values
     def evaluate_log_likelihood(self, values, data):
@@ -635,13 +639,14 @@ class Model:
         Evaluate the log likelihood of the data conditional on all model parameters.
         """
         if not self.inflated:
-            return self._evaluate_sample_log_likelihood(values, data).sum()
+            return tf.reduce_sum(self._evaluate_sample_log_likelihood(values, data))
 
         patient_contrib = self._evaluate_patient_log_likelihood(values, data) + \
-            np.log(values['rho'])
-        np.logaddexp(patient_contrib, np.log1p(-values['rho']), out=patient_contrib,
-                     where=data['num_positives_by_patient'] == 0)
-        return patient_contrib.sum()
+            tf.math.log(values['rho'])
+        some_positive = data['num_positives_by_patient'] > 0
+        patient_contrib = tf.where(some_positive, patient_contrib,
+                                   tf_logaddexp(patient_contrib, tf.math.log1p(-values['rho'])))
+        return tf.reduce_sum(patient_contrib)
 
     @broadcast_samples
     @_augment_values
@@ -832,9 +837,10 @@ class Model:
         # Patient means
         x = values.get('log_patient_mean')
         if x is None:
-            x = np.log(values['patient_mean'])
-        result += gengamma_lpdf(values['population_shape'], values['population_loc'],
-                                values['population_scale'], x).sum()
+            x = tf.math.log(values['patient_mean'])
+        result += tf.math.reduce_sum(
+            gengamma_lpdf(values['population_shape'], values['population_loc'],
+                          values['population_scale'], x))
         return result + self.evaluate_log_likelihood(values, data)
 
     @flush_traceback
