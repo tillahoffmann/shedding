@@ -74,7 +74,7 @@ def test_transpose_samples_roundtrip():
     [np.testing.assert_allclose(value, values[key]) for key, value in reconstructed.items()]
 
 
-@pytest.fixture(params=it.product(shedding.Parametrisation, [False, True]))
+@pytest.fixture(params=it.product(shedding.Parametrisation, [False, True], [False, True]))
 def model(request):
     return shedding.Model(10, *request.param)
 
@@ -85,6 +85,7 @@ def data(model):
     n = model.num_patients * num_samples_by_patient
     loq = np.random.gamma(1, size=n)
     load = np.random.gamma(1, size=n)
+    day = np.random.poisson(5, n)
     positive = load > loq
     idx = np.repeat(np.arange(model.num_patients), num_samples_by_patient)
     return {
@@ -94,6 +95,7 @@ def data(model):
         'loqln': np.log(loq),
         'load': load,
         'loadln': np.log(load),
+        'day': day,
         'idx': idx,
         'positive': positive,
         'num_positives_by_patient': np.bincount(idx, positive)
@@ -124,6 +126,8 @@ def hyperparameters(model):
         raise ValueError(model)
     if model.inflated:
         params['rho'] = 0.9
+    if model.temporal:
+        params['slope'] = -0.1
     return params
 
 

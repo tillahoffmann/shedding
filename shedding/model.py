@@ -314,6 +314,17 @@ class HalfCauchyPrior(PositivePrior):
         return 2 * scale / (np.pi * (scale ** 2 + x ** 2))
 
 
+class CauchyPrior(Prior):
+    @classmethod
+    def from_uniform(cls, uniform, loc, scale):
+        return loc + scale * np.tan(np.pi * (uniform - 0.5))
+
+    def lpdf(self, x):
+        scale = self.kwargs['scale']
+        loc = self.kwargs['loc']
+        return scale / (np.pi * (scale ** 2 + (x - loc) ** 2))
+
+
 class NormalPrior(Prior):
     @classmethod
     def from_uniform(cls, uniform, mu, sigma):
@@ -515,6 +526,8 @@ class Model:
         Parametrisation used by the model (see notes for details).
     inflated : bool
         Whether there is a "zero-inflated" subpopulation of patients who do not shed RNA.
+    temporal : bool
+        Whether to include an exponential decay component in the fit.
     priors : dict
         Mapping of parameter names to callable priors.
 
@@ -535,10 +548,12 @@ class Model:
     The model can be restricted to a particular distribution using the :code:`parametrisation`
     parameter.
     """
-    def __init__(self, num_patients, parametrisation='general', inflated=False, priors=None):
+    def __init__(self, num_patients, parametrisation='general', inflated=False, temporal=False,
+                 priors=None):
         self.num_patients = num_patients
         self.parametrisation = Parametrisation(parametrisation)
         self.inflated = inflated
+        self.temporal = temporal
         # Using Stacey's parametrisation
         self.parameters = {
             'population_loc': (),
@@ -553,6 +568,8 @@ class Model:
             })
         if self.inflated:
             self.parameters['rho'] = ()
+        if self.temporal:
+            self.parameters['slope'] = ()
         self.size = evaluate_size(self.parameters)
 
         # Merge the supplied priors and default priors
@@ -569,6 +586,8 @@ class Model:
             })
         if self.inflated:
             default_priors['rho'] = UniformPrior(0, 1)
+        if self.temporal:
+            default_priors['slope'] = CauchyPrior(loc=0, scale=1)
         for key, prior in default_priors.items():
             self.priors.setdefault(key, prior)
 
@@ -621,6 +640,9 @@ class Model:
         sigma = values['patient_scale']
         mu = gengamma_loc(q, sigma, values['patient_mean'])
         mu = np.repeat(mu, data['num_samples_by_patient'], axis=-1)
+        slope = values.get('slope')
+        if slope is not None:
+            mu += slope * data['day']
         lxdf = gengamma_lpdf(q, mu, sigma, data['loadln'], where=data['positive'])
         gengamma_lcdf(q, mu, sigma, data['loqln'], out=lxdf, where=~data['positive'])
         return lxdf
