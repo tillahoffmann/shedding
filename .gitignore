@@ -153,3 +153,5 @@ publications/*/*
 # ... except the summary and data
 !publications/*/*.json
 !publications/*/*.rst
+
+shedding/*.c

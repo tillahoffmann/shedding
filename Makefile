@@ -2,16 +2,16 @@
 
 build : flake8 tests docs
 
-flake8 : requirements.txt
+flake8 :
 	flake8
 
-tests : requirements.txt
+tests :
 	pytest -v --cov=shedding --cov-report=html --cov-report=term-missing
 
-doctests : requirements.txt
+doctests :
 	sphinx-build -b doctest . docs/_build
 
-docs : doctests requirements.txt
+docs : doctests
 	sphinx-build . docs/_build
 
 clean :
@@ -19,14 +19,15 @@ clean :
 
 # Generate pinned dependencies
 requirements.txt : requirements.in setup.py
-ifndef CI
 	pip-compile -v --upgrade
+
+sync : requirements.txt
 	pip-sync
-endif
+	$(MAKE) pypolychord
 
 # Build the repository using a GitHub action for local debugging
 # (cf. https://github.com/nektos/act)
-build_action :
+gh-action :
 	act -P ubuntu-latest=nektos/act-environments-ubuntu:18.04
 
 PolyChordLite :
