@@ -5,6 +5,7 @@ import inspect
 import numpy as np
 from scipy import special
 from .util import flush_traceback, softmax, logmeanexp
+from ._util import gengamma_lpdf, gengamma_lcdf, gengamma_loc
 
 
 def broadcast_samples(func):
@@ -182,7 +183,7 @@ _LN_PDF_CONSTANT = np.log(2 * np.pi) / 2
 _SQRT2 = np.sqrt(2)
 
 
-def gengamma_lpdf(q, mu, sigma, logx, qmin=1e-6):
+def _gengamma_lpdf(q, mu, sigma, logx, qmin=1e-6):
     r"""
     Evaluate the natural logarithm of the generalised gamma pdf.
 
@@ -229,12 +230,12 @@ def gengamma_lpdf(q, mu, sigma, logx, qmin=1e-6):
     lpdf1 = logc - special.gammaln(a) + a * np.log(a) + (a * c - 1) * logx - \
         a * (mu * c + np.exp(qz))
     # Evaluate for small q close to the lognormal limit
-    s = np.where(qz > qmin, np.expm1(qz) / q, z + q * z * z / 2)
+    s = np.where(qz > qmin, np.expm1(qz) / q, z + qz * z / 2)
     lpdf2 = - _LN_PDF_CONSTANT - np.log(sigma) - s * s / 2 + qz - logx
     return np.where(q > qmin, lpdf1, lpdf2)
 
 
-def gengamma_lcdf(q, mu, sigma, logx, qmin=1e-6):
+def _gengamma_lcdf(q, mu, sigma, logx, qmin=1e-6):
     """
     Evaluate the natural logarithm of the generalised gamma cdf.
     """
@@ -243,7 +244,7 @@ def gengamma_lcdf(q, mu, sigma, logx, qmin=1e-6):
     qz = q * z
     arg = a * np.exp(qz)
     cdf1 = special.gammainc(a, arg)
-    s = np.where(qz > qmin, np.expm1(qz) / q, z + q * z * z / 2)
+    s = np.where(qz > qmin, np.expm1(qz) / q, z + qz * z / 2)
     cdf2 = (1 + special.erf(s / _SQRT2)) / 2
     return np.log(np.where(q > qmin, cdf1, cdf2))
 
@@ -263,7 +264,7 @@ def gengamma_mean(q, mu, sigma, qmin=1e-6):
     return np.exp(log_mean)
 
 
-def gengamma_loc(q, sigma, mean, qmin=1e-6):
+def _gengamma_loc(q, sigma, mean, qmin=1e-6):
     """
     Evaluate the scale of the generalised gamma distribution for given shape, exponent, and mean.
     """
@@ -479,7 +480,9 @@ def _augment_values(func):
     """
     @ft.wraps(func)
     def _augment_wrapper(self, values, *args, **kwargs):
-        if self.parametrisation == Parametrisation.LOGNORMAL:
+        if self.parametrisation == Parametrisation.GENERAL:
+            pass
+        elif self.parametrisation == Parametrisation.LOGNORMAL:
             values.update({
                 'population_shape': np.float64(0),
                 'patient_shape': np.float64(0),
@@ -494,6 +497,8 @@ def _augment_values(func):
                     'population_shape': values['population_scale'],
                     'patient_shape': values['patient_scale'],
                 })
+        else:
+            raise ValueError
         return func(self, values, *args, **kwargs)
     return _augment_wrapper
 
@@ -616,9 +621,9 @@ class Model:
         sigma = values['patient_scale']
         mu = gengamma_loc(q, sigma, values['patient_mean'])
         mu = np.repeat(mu, data['num_samples_by_patient'], axis=-1)
-        lpdf = gengamma_lpdf(q, mu, sigma, data['loadln'])
-        lcdf = gengamma_lcdf(q, mu, sigma, data['loqln'])
-        return np.where(data['positive'], lpdf, lcdf)
+        lxdf = gengamma_lpdf(q, mu, sigma, data['loadln'], where=data['positive'])
+        gengamma_lcdf(q, mu, sigma, data['loqln'], out=lxdf, where=~data['positive'])
+        return lxdf
 
     @_augment_values
     def _evaluate_patient_log_likelihood(self, values, data):
