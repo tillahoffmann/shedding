@@ -27,6 +27,7 @@ setup(
         'numpy',
         'scipy',
         'cyfunc>=0.1.4',
+        'emcee',
     ],
     setup_requires=[
         'cython',

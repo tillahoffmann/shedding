@@ -577,7 +577,7 @@ class Model:
         default_priors = {
                 'population_scale': HalfCauchyPrior(scale=1),
                 'patient_scale': HalfCauchyPrior(scale=1),
-                'population_loc': UniformPrior(6, 20)
+                'population_loc': UniformPrior(6, 23)
             }
         if self.parametrisation == Parametrisation.GENERAL:
             default_priors.update({
@@ -789,6 +789,11 @@ class Model:
         sigma = values['patient_scale']
         mu = gengamma_loc(q, sigma, values['patient_mean'])
         mu = np.repeat(mu, data['num_samples_by_patient'])
+        # Account for the time dependence if available
+        slope = values.get('slope')
+        if slope is not None:
+            mu += slope * data['day']
+        # Sample
         load = GengammaPrior.from_uniform(np.random.uniform(size=mu.size), q, mu, sigma)
 
         # Account for the patients who do not shed any RNA

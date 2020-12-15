@@ -23,6 +23,7 @@ cython==0.29.21           # via cyfunc
 decorator==4.4.2          # via ipython
 defusedxml==0.6.0         # via nbconvert
 docutils==0.16            # via sphinx
+emcee==3.0.2              # via shedding
 entrypoints==0.3          # via nbconvert
 flake8==3.8.4             # via shedding
 fspath==20190323          # via linuxdoc
@@ -53,7 +54,7 @@ nbconvert==6.0.7          # via jupyter, notebook
 nbformat==5.0.8           # via ipywidgets, nbclient, nbconvert, notebook
 nest-asyncio==1.4.2       # via nbclient
 notebook==6.1.5           # via jupyter, widgetsnbextension
-numpy==1.19.4             # via cyfunc, matplotlib, pandas, scipy, shedding
+numpy==1.19.4             # via cyfunc, emcee, matplotlib, pandas, scipy, shedding
 packaging==20.4           # via bleach, pytest, sphinx
 pandas==1.1.4             # via -r requirements.in
 pandocfilters==1.4.3      # via nbconvert

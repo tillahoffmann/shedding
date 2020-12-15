@@ -43,18 +43,43 @@ wordd = $(word $2,$(subst -, ,$1))
 
 # Code to generate samples
 PARAMETRISATIONS = general gamma weibull lognormal
-INFLATED = 0 1
-INFLATED_1 = --inflated
-SEEDS = 0 1 2 3
+
+INFLATED = standard inflated
+INFLATED_inflated = --inflated
+
+TEMPORAL = constant temporal
+TEMPORAL_temporal = --temporal
+
+SEEDS = 0 1 2
+
 TARGET_DIRS = $(addprefix workspace/,\
+	$(foreach s,${SEEDS}, \
 	$(foreach p,${PARAMETRISATIONS},\
 	$(foreach i,${INFLATED}, \
-	$(foreach s,${SEEDS},$p-$i-$s))))
-TARGETS = $(addsuffix /chain.txt,${TARGET_DIRS})
+	$(foreach t,${TEMPORAL}, \
+	$p-$i-$t-$s)))))
 
-samples: ${TARGETS}
 
-$(TARGETS) : workspace/%/chain.txt : polychord-sampling.ipynb
-	ARGS="--seed=$(call wordd,$*,3) ${INFLATED_$(call wordd,$*,2)} --nlive-factor=10 --nrepeat-factor=3 $(call wordd,$*,1) workspace/$*" \
+# Evidences using polychord
+EVIDENCE_TARGETS = $(addsuffix /polychord/chain.txt,${TARGET_DIRS})
+
+evidences: ${EVIDENCE_TARGETS}
+
+$(EVIDENCE_TARGETS) : workspace/%/polychord/chain.txt : polychord-sampling.ipynb
+	ARGS="--seed=$(call wordd,$*,4) ${TEMPORAL_$(call wordd,$*,3)} ${INFLATED_$(call wordd,$*,2)} -f --nlive-factor=25 --nrepeat-factor=5 $(call wordd,$*,1) workspace/$*/polychord" \
 		jupyter-nbconvert --execute --allow-errors --ExecuteProcessor.timeout=-1 \
 		--output-dir=workspace/$* --to=html $<
+
+
+# Samples using emcee
+SAMPLE_TARGETS = $(addsuffix /emcee/samples.pkl,${TARGET_DIRS})
+
+samples : ${SAMPLE_TARGETS}
+
+${SAMPLE_TARGETS} : workspace/%/emcee/samples.pkl :
+	ARGS="--seed=$(call wordd,$*,4) ${TEMPORAL_$(call wordd,$*,3)} ${INFLATED_$(call wordd,$*,2)} $(call wordd,$*,1) workspace/$*/emcee" \
+		jupyter-nbconvert --execute --allow-errors --ExecuteProcessor.timeout=-1 \
+		--output-dir=workspace/$* --to=html emcee-sampling.ipynb
+
+clean_emcee :
+	rm -rf workspace/*/emcee
