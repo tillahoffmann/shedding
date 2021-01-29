@@ -800,23 +800,7 @@ class Model:
 
         # Account for the patients who do not shed any RNA
         if self.inflated:
-            if simulation_mode == SimulationMode.NEW_PATIENTS:
-                z = np.random.uniform(size=num_patients) < values['rho']
-            else:
-                patient_contrib = self._evaluate_patient_log_likelihood(values, data)
-                # Evaluate the probability of being a shedder or non-shedder in the log space using
-                # a Gibbs sampling approach.
-                logprobas = np.asarray([
-                    np.log1p(-values['rho']) * np.ones(num_patients),
-                    np.log(values['rho']) + patient_contrib,
-                ])
-                probas = softmax(logprobas, axis=0)
-                # Ensure everyone who has a positive sample remains a shedder in the replication.
-                probas[0, data['num_positives_by_patient'] > 0] *= 0
-                # Renormalise and pick the probability to be a shedder.
-                probas = (probas / np.sum(probas, axis=0))[1]
-                z = np.random.uniform(0, 1, num_patients) < probas
-            values['z'] = z
+            values['z'] = z = np.random.uniform(size=num_patients) < values['rho']
             z = np.repeat(z, data['num_samples_by_patient'])
             load = np.where(z, load, loq / 2)
         data['load'] = load
