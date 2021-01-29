@@ -56,7 +56,10 @@ cdef void gengamma_lcdf_d(char** args, void* data):
         value = 1 / (q * q)  # Using `value` as a substitute for a to save memory.
         value = cspecial.gammainc(value, value * math.exp(q * z))
 
-    set_value(args, 4, math.log(value))
+    if value == 0:
+        set_value[double](args, 4, -math.INFINITY)
+    else:
+        set_value(args, 4, math.log(value))
 
 
 @cython.cdivision(True)

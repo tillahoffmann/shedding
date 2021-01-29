@@ -4,7 +4,7 @@ import functools as ft
 import inspect
 import numpy as np
 from scipy import special
-from .util import flush_traceback, softmax, logmeanexp
+from .util import flush_traceback, logmeanexp
 from ._util import gengamma_lpdf, gengamma_lcdf, gengamma_loc
 
 
@@ -311,7 +311,20 @@ class HalfCauchyPrior(PositivePrior):
 
     def lpdf(self, x):
         scale = self.kwargs['scale']
-        return 2 * scale / (np.pi * (scale ** 2 + x ** 2))
+        z = x / scale
+        return np.log(2 / (scale * np.pi)) - np.log1p(z ** 2)
+
+
+class CauchyPrior(Prior):
+    @classmethod
+    def from_uniform(cls, uniform, loc, scale):
+        return loc + scale * np.tan(np.pi * (uniform - 0.5))
+
+    def lpdf(self, x):
+        scale = self.kwargs['scale']
+        loc = self.kwargs['loc']
+        z = (x - loc) / scale
+        return -np.log(np.pi * scale) - np.log1p(z ** 2)
 
 
 class NormalPrior(Prior):
@@ -515,6 +528,8 @@ class Model:
         Parametrisation used by the model (see notes for details).
     inflated : bool
         Whether there is a "zero-inflated" subpopulation of patients who do not shed RNA.
+    temporal : bool
+        Whether to include an exponential decay component in the fit.
     priors : dict
         Mapping of parameter names to callable priors.
 
@@ -535,10 +550,12 @@ class Model:
     The model can be restricted to a particular distribution using the :code:`parametrisation`
     parameter.
     """
-    def __init__(self, num_patients, parametrisation='general', inflated=False, priors=None):
+    def __init__(self, num_patients, parametrisation='general', inflated=False, temporal=False,
+                 priors=None):
         self.num_patients = num_patients
         self.parametrisation = Parametrisation(parametrisation)
         self.inflated = inflated
+        self.temporal = temporal
         # Using Stacey's parametrisation
         self.parameters = {
             'population_loc': (),
@@ -553,6 +570,8 @@ class Model:
             })
         if self.inflated:
             self.parameters['rho'] = ()
+        if self.temporal:
+            self.parameters['slope'] = ()
         self.size = evaluate_size(self.parameters)
 
         # Merge the supplied priors and default priors
@@ -560,7 +579,7 @@ class Model:
         default_priors = {
                 'population_scale': HalfCauchyPrior(scale=1),
                 'patient_scale': HalfCauchyPrior(scale=1),
-                'population_loc': UniformPrior(6, 20)
+                'population_loc': UniformPrior(6, 23)
             }
         if self.parametrisation == Parametrisation.GENERAL:
             default_priors.update({
@@ -569,6 +588,8 @@ class Model:
             })
         if self.inflated:
             default_priors['rho'] = UniformPrior(0, 1)
+        if self.temporal:
+            default_priors['slope'] = CauchyPrior(loc=0, scale=1)
         for key, prior in default_priors.items():
             self.priors.setdefault(key, prior)
 
@@ -621,6 +642,9 @@ class Model:
         sigma = values['patient_scale']
         mu = gengamma_loc(q, sigma, values['patient_mean'])
         mu = np.repeat(mu, data['num_samples_by_patient'], axis=-1)
+        slope = values.get('slope')
+        if slope is not None:
+            mu += slope * data['day']
         lxdf = gengamma_lpdf(q, mu, sigma, data['loadln'], where=data['positive'])
         gengamma_lcdf(q, mu, sigma, data['loqln'], out=lxdf, where=~data['positive'])
         return lxdf
@@ -767,27 +791,16 @@ class Model:
         sigma = values['patient_scale']
         mu = gengamma_loc(q, sigma, values['patient_mean'])
         mu = np.repeat(mu, data['num_samples_by_patient'])
+        # Account for the time dependence if available
+        slope = values.get('slope')
+        if slope is not None:
+            mu += slope * data['day']
+        # Sample
         load = GengammaPrior.from_uniform(np.random.uniform(size=mu.size), q, mu, sigma)
 
         # Account for the patients who do not shed any RNA
         if self.inflated:
-            if simulation_mode == SimulationMode.NEW_PATIENTS:
-                z = np.random.uniform(size=num_patients) < values['rho']
-            else:
-                patient_contrib = self._evaluate_patient_log_likelihood(values, data)
-                # Evaluate the probability of being a shedder or non-shedder in the log space using
-                # a Gibbs sampling approach.
-                logprobas = np.asarray([
-                    np.log1p(-values['rho']) * np.ones(num_patients),
-                    np.log(values['rho']) + patient_contrib,
-                ])
-                probas = softmax(logprobas, axis=0)
-                # Ensure everyone who has a positive sample remains a shedder in the replication.
-                probas[0, data['num_positives_by_patient'] > 0] *= 0
-                # Renormalise and pick the probability to be a shedder.
-                probas = (probas / np.sum(probas, axis=0))[1]
-                z = np.random.uniform(0, 1, num_patients) < probas
-            values['z'] = z
+            values['z'] = z = np.random.uniform(size=num_patients) < values['rho']
             z = np.repeat(z, data['num_samples_by_patient'])
             load = np.where(z, load, loq / 2)
         data['load'] = load
