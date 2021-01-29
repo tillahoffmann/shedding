@@ -4,7 +4,7 @@ import functools as ft
 import inspect
 import numpy as np
 from scipy import special
-from .util import flush_traceback, softmax, logmeanexp
+from .util import flush_traceback, logmeanexp
 from ._util import gengamma_lpdf, gengamma_lcdf, gengamma_loc
 
 
