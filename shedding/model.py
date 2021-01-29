@@ -311,7 +311,8 @@ class HalfCauchyPrior(PositivePrior):
 
     def lpdf(self, x):
         scale = self.kwargs['scale']
-        return 2 * scale / (np.pi * (scale ** 2 + x ** 2))
+        z = x / scale
+        return np.log(2 / (scale * np.pi)) - np.log1p(z ** 2)
 
 
 class CauchyPrior(Prior):
@@ -322,7 +323,8 @@ class CauchyPrior(Prior):
     def lpdf(self, x):
         scale = self.kwargs['scale']
         loc = self.kwargs['loc']
-        return scale / (np.pi * (scale ** 2 + (x - loc) ** 2))
+        z = (x - loc) / scale
+        return -np.log(np.pi * scale) - np.log1p(z ** 2)
 
 
 class NormalPrior(Prior):

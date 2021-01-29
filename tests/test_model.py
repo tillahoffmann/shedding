@@ -1,7 +1,7 @@
 import itertools as it
 import numpy as np
 import pytest
-from scipy import stats
+from scipy import stats, integrate
 import shedding
 
 
@@ -184,3 +184,13 @@ def test_transform(model):
     assert set(original) == set(recovered)
     for key, actual in recovered.items():
         np.testing.assert_allclose(actual, original[key], err_msg=key)
+
+
+@pytest.mark.parametrize('prior, domain', [
+    [shedding.HalfCauchyPrior(scale=4), (0, np.inf)],
+    [shedding.UniformPrior(3, 7), (3, 7)],
+    [shedding.CauchyPrior(loc=4, scale=7), (-np.inf, np.inf)],
+])
+def test_prior_normalisation(prior, domain):
+    y, abserr = integrate.quad(lambda x: np.exp(prior.lpdf(x)), *domain)
+    assert np.abs(1 - y) < 3 * abserr
