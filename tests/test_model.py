@@ -145,9 +145,6 @@ def test_simulate(model, hyperparameters, data):
         for x, d in zip([values, replicate_values], [data, replicate]):
             z = np.repeat(x['z'], d['num_samples_by_patient'])
             np.testing.assert_array_equal(d['positive'][~z], False)
-        # Ensure that anyone who shed in the original data remains a shedder
-        fltr = data['num_positives_by_patient'] > 0
-        np.testing.assert_array_equal(replicate_values['z'][fltr], True)
 
 
 def test_marginal_log_likelihood(model, hyperparameters, data):
