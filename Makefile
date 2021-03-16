@@ -116,7 +116,7 @@ ${PROFILE_TARGETS} : workspace/profile-%/result.pkl : polychord-sampling.ipynb
 		jupyter-nbconvert --execute --allow-errors --ExecuteProcessor.timeout=-1 \
 		--output-dir=workspace/profile-$* --to=html $<
 
-inference_test : polychord-sampling.ipynb
+inference_test : polychord-sampling.ipynb pypolychord
 	mkdir -p $@
 	ARGS="-f --nlive-factor=1 --nrepeat-factor=1 --temporal=exponential --seed=0 general $@" \
 		jupyter-nbconvert --execute --ExecuteProcessor.timeout=-1 --output-dir $@ --to=html $<
