@@ -410,6 +410,37 @@ class Parametrisation(enum.Enum):
     LOGNORMAL = 'lognormal'
 
 
+class Profile(enum.Enum):
+    EXPONENTIAL = 'exponential'
+    GAMMA = 'gamma'
+    TEUNIS = 'teunis'
+    CONSTANT = False
+
+    def evaluate_offset(self, day, values):
+        """
+        Evaluate the offset from the population-level location parameter due to the shedding
+        profile.
+
+        Parameters
+        ----------
+        values : dict
+            Parameter values for which to evaluate the offset.
+        """
+        if self == Profile.CONSTANT:
+            return 0
+        if self == Profile.EXPONENTIAL:
+            return values['slope'] * day
+        delta = day - values['profile_offset']
+        if self == Profile.GAMMA:
+            profile = values['profile_shape'] * np.log(delta) - values['profile_scale'] * delta
+        elif self == Profile.TEUNIS:
+            profile = np.log1p(-np.exp(-values['profile_rise'] * delta)) - \
+                values['profile_decay'] * delta
+        else:
+            raise ValueError(self)
+        return np.where(delta > 0, profile, -np.inf)
+
+
 class SimulationMode(enum.Enum):
     """
     Enum to indicate whether simulation should be for `EXISTING_PATIENTS` or `NEW_PATIENTS`. Given
@@ -528,8 +559,8 @@ class Model:
         Parametrisation used by the model (see notes for details).
     inflated : bool
         Whether there is a "zero-inflated" subpopulation of patients who do not shed RNA.
-    temporal : bool
-        Whether to include an exponential decay component in the fit.
+    temporal : str
+        Whether to include a shedding profile in the fit.
     priors : dict
         Mapping of parameter names to callable priors.
 
@@ -555,7 +586,7 @@ class Model:
         self.num_patients = num_patients
         self.parametrisation = Parametrisation(parametrisation)
         self.inflated = inflated
-        self.temporal = temporal
+        self.temporal = Profile(temporal)
         # Using Stacey's parametrisation
         self.parameters = {
             'population_loc': (),
@@ -570,8 +601,22 @@ class Model:
             })
         if self.inflated:
             self.parameters['rho'] = ()
-        if self.temporal:
+        if self.temporal == Profile.GAMMA:
+            # Parameters for the gamma distribution. Shape and scale as usual. Offset is just an
+            # overall shift.
+            self.parameters.update({
+                'profile_offset': (),
+                'profile_shape': (),
+                'profile_scale': (),
+            })
+        elif self.temporal == Profile.EXPONENTIAL:
             self.parameters['slope'] = ()
+        elif self.temporal == Profile.TEUNIS:
+            self.parameters.update({
+                'profile_offset': (),
+                'profile_rise': (),
+                'profile_decay': (),
+            })
         self.size = evaluate_size(self.parameters)
 
         # Merge the supplied priors and default priors
@@ -588,8 +633,16 @@ class Model:
             })
         if self.inflated:
             default_priors['rho'] = UniformPrior(0, 1)
-        if self.temporal:
+        if self.temporal == Profile.GAMMA:
+            default_priors['profile_offset'] = UniformPrior(-14, 7)
+            default_priors['profile_shape'] = HalfCauchyPrior(scale=1)
+            default_priors['profile_scale'] = HalfCauchyPrior(scale=1)
+        elif self.temporal == Profile.EXPONENTIAL:
             default_priors['slope'] = CauchyPrior(loc=0, scale=1)
+        elif self.temporal == Profile.TEUNIS:
+            default_priors['profile_offset'] = UniformPrior(-14, 7)
+            default_priors['profile_rise'] = HalfCauchyPrior(scale=1)
+            default_priors['profile_decay'] = HalfCauchyPrior(scale=1)
         for key, prior in default_priors.items():
             self.priors.setdefault(key, prior)
 
@@ -641,10 +694,8 @@ class Model:
         q = values['patient_shape']
         sigma = values['patient_scale']
         mu = gengamma_loc(q, sigma, values['patient_mean'])
-        mu = np.repeat(mu, data['num_samples_by_patient'], axis=-1)
-        slope = values.get('slope')
-        if slope is not None:
-            mu += slope * data['day']
+        mu = np.repeat(mu, data['num_samples_by_patient'], axis=-1) + \
+            self.temporal.evaluate_offset(data['day'], values)
         lxdf = gengamma_lpdf(q, mu, sigma, data['loadln'], where=data['positive'])
         gengamma_lcdf(q, mu, sigma, data['loqln'], out=lxdf, where=~data['positive'])
         return lxdf
@@ -792,9 +843,7 @@ class Model:
         mu = gengamma_loc(q, sigma, values['patient_mean'])
         mu = np.repeat(mu, data['num_samples_by_patient'])
         # Account for the time dependence if available
-        slope = values.get('slope')
-        if slope is not None:
-            mu += slope * data['day']
+        mu += self.temporal.evaluate_offset(data['day'], values)
         # Sample
         load = GengammaPrior.from_uniform(np.random.uniform(size=mu.size), q, mu, sigma)
 

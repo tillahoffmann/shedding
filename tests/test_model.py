@@ -74,7 +74,7 @@ def test_transpose_samples_roundtrip():
     [np.testing.assert_allclose(value, values[key]) for key, value in reconstructed.items()]
 
 
-@pytest.fixture(params=it.product(shedding.Parametrisation, [False, True], [False, True]))
+@pytest.fixture(params=it.product(shedding.Parametrisation, [False, True], shedding.Profile))
 def model(request):
     return shedding.Model(10, *request.param)
 
@@ -123,11 +123,21 @@ def hyperparameters(model):
         params = {'patient_scale': 1, 'population_scale': 1, 'population_loc': 1,
                   'patient_shape': 2, 'population_shape': 3}
     else:
-        raise ValueError(model)
+        raise ValueError(model.parametrisation)
     if model.inflated:
         params['rho'] = 0.9
-    if model.temporal:
+    if model.temporal == shedding.Profile.EXPONENTIAL:
         params['slope'] = -0.1
+    elif model.temporal == shedding.Profile.GAMMA:
+        params['profile_offset'] = 0
+        params['profile_shape'] = 1
+        params['profile_scale'] = 0.1
+    elif model.temporal == shedding.Profile.TEUNIS:
+        params['profile_offset'] = 0
+        params['profile_rise'] = 1
+        params['profile_decay'] = 0.1
+    elif model.temporal != shedding.Profile.CONSTANT:
+        raise ValueError(model.temporal)
     return params
 
 
