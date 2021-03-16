@@ -528,8 +528,8 @@ class Model:
         Parametrisation used by the model (see notes for details).
     inflated : bool
         Whether there is a "zero-inflated" subpopulation of patients who do not shed RNA.
-    temporal : bool
-        Whether to include an exponential decay component in the fit.
+    temporal : str
+        Whether to include a shedding profile in the fit.
     priors : dict
         Mapping of parameter names to callable priors.
 
@@ -570,8 +570,24 @@ class Model:
             })
         if self.inflated:
             self.parameters['rho'] = ()
-        if self.temporal:
+        if self.temporal == 'gamma':
+            # Parameters for the gamma distribution. Shape and scale as usual. Offset is just an
+            # overall shift.
+            self.parameters.update({
+                'profile_offset': (),
+                'profile_shape': (),
+                'profile_scale': (),
+            })
+        elif self.temporal == 'exponential':
             self.parameters['slope'] = ()
+        elif self.temporal == 'teunis':
+            self.parameters.update({
+                'profile_offset': (),
+                'profile_rise': (),
+                'profile_decay': (),
+            })
+        elif self.temporal:
+            raise ValueError(self.temporal)
         self.size = evaluate_size(self.parameters)
 
         # Merge the supplied priors and default priors
@@ -588,8 +604,16 @@ class Model:
             })
         if self.inflated:
             default_priors['rho'] = UniformPrior(0, 1)
-        if self.temporal:
+        if self.temporal == 'gamma':
+            default_priors['profile_offset'] = UniformPrior(-14, 7)
+            default_priors['profile_shape'] = HalfCauchyPrior(scale=1)
+            default_priors['profile_scale'] = HalfCauchyPrior(scale=1)
+        elif self.temporal == 'exponential':
             default_priors['slope'] = CauchyPrior(loc=0, scale=1)
+        elif self.temporal == 'teunis':
+            default_priors['profile_offset'] = UniformPrior(-14, 7)
+            default_priors['profile_rise'] = HalfCauchyPrior(scale=1)
+            default_priors['profile_decay'] = HalfCauchyPrior(scale=1)
         for key, prior in default_priors.items():
             self.priors.setdefault(key, prior)
 
@@ -642,9 +666,16 @@ class Model:
         sigma = values['patient_scale']
         mu = gengamma_loc(q, sigma, values['patient_mean'])
         mu = np.repeat(mu, data['num_samples_by_patient'], axis=-1)
-        slope = values.get('slope')
-        if slope is not None:
-            mu += slope * data['day']
+        if self.temporal == 'gamma':
+            delta = data['day'] - values['profile_offset']
+            mu += np.where(delta < 0, -np.inf, (values['profile_shape']) * np.log(delta)
+                           - values['profile_scale'] * delta)
+        elif self.temporal == 'teunis':  # https://pubmed.ncbi.nlm.nih.gov/25336060/
+            delta = data['day'] - values['profile_offset']
+            mu += np.where(delta < 0, -np.inf, np.log1p(-np.exp(-values['profile_rise'] * delta))
+                           - values['profile_decay'] * delta)
+        elif self.temporal == 'exponential':
+            mu += values['slope'] * data['day']
         lxdf = gengamma_lpdf(q, mu, sigma, data['loadln'], where=data['positive'])
         gengamma_lcdf(q, mu, sigma, data['loqln'], out=lxdf, where=~data['positive'])
         return lxdf

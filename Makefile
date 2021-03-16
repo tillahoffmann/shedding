@@ -48,7 +48,7 @@ INFLATED = standard inflated
 INFLATED_inflated = --inflated
 
 TEMPORAL = constant temporal
-TEMPORAL_temporal = --temporal
+TEMPORAL_temporal = --temporal=exponential
 
 SEEDS = 0 1 2
 
@@ -91,3 +91,27 @@ $(EXTRA_SAMPLE_TARGETS) : workspace/%/polychord/result.pkl : polychord-sampling.
 		--output-dir=workspace/$* --to=html $<
 
 all : evidences extra_samples
+
+# Targets for assessing sensitvity to errors in days past symptom onset (don't need as many points
+# because we're not trying to evaluate evidences)
+SENSITIVITY_TARGET_DIRS = $(foreach s,${SEEDS},$(foreach d,1 2 3,workspace/sensitivity-$d-$s))
+SENSITIVITY_TARGETS = $(addsuffix /result.pkl,${SENSITIVITY_TARGET_DIRS})
+
+sensitivity : ${SENSITIVITY_TARGETS}
+
+${SENSITIVITY_TARGETS} : workspace/sensitivity-%/result.pkl : polychord-sampling.ipynb
+	ARGS="-f --nlive-factor=5 --nrepeat-factor=2 --day-noise=$(call wordd,$*,1) --seed=$(call wordd,$*,2) --temporal general workspace/sensitivity-$*" \
+		jupyter-nbconvert --execute --allow-errors --ExecuteProcessor.timeout=-1 \
+		--output-dir=workspace/sensitivity-$* --to=html $<
+
+
+# Targets for investigating different shedding profiles
+PROFILE_TARGET_DIRS = $(foreach s,${SEEDS},$(foreach t,teunis gamma,workspace/profile-$t-$s))
+PROFILE_TARGETS = $(addsuffix /result.pkl,${PROFILE_TARGET_DIRS})
+
+profiles : ${PROFILE_TARGETS}
+
+${PROFILE_TARGETS} : workspace/profile-%/result.pkl : polychord-sampling.ipynb
+	ARGS="-f --nlive-factor=25 --nrepeat-factor=5 --temporal=$(call wordd,$*,1) --seed=$(call wordd,$*,2) general workspace/profile-$*" \
+		jupyter-nbconvert --execute --allow-errors --ExecuteProcessor.timeout=-1 \
+		--output-dir=workspace/profile-$* --to=html $<
