@@ -5,7 +5,10 @@ import inspect
 import numpy as np
 from scipy import special
 from .util import flush_traceback, logmeanexp
-from ._util import gengamma_lpdf, gengamma_lcdf, gengamma_loc
+# Importing _util breaks the readthedocs build. Omit if when we're building the documentation.
+import os
+if not os.environ.get('READTHEDOCS'):
+    from ._util import gengamma_lpdf, gengamma_lcdf, gengamma_loc
 
 
 def broadcast_samples(func):
