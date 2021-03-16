@@ -8,7 +8,9 @@ on:
 
 jobs:
   build:
-
+    strategy:
+      matrix:
+        command: [make build, make inference_test]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -19,4 +21,4 @@ jobs:
     - name: Install dependencies
       run: pip install -r requirements.txt
     - name: Build docs, lint, and test
-      run: make build
+      run: ${{ matrix.command }}

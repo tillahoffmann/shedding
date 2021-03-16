@@ -1,4 +1,4 @@
-.PHONY : clean docs doctests tests pypolychord
+.PHONY : clean docs doctests tests pypolychord inference_test
 
 build : flake8 tests docs
 
@@ -31,7 +31,7 @@ gh-action :
 	act -P ubuntu-latest=nektos/act-environments-ubuntu:18.04
 
 PolyChordLite :
-	git clone --depth 1 --branch 1.18.1 git@github.com:PolyChord/PolyChordLite.git
+	git clone --depth 1 --branch 1.18.1 https://github.com/PolyChord/PolyChordLite.git
 
 pypolychord : PolyChordLite
 	cd PolyChordLite \
@@ -115,3 +115,8 @@ ${PROFILE_TARGETS} : workspace/profile-%/result.pkl : polychord-sampling.ipynb
 	ARGS="-f --nlive-factor=25 --nrepeat-factor=5 --temporal=$(call wordd,$*,1) --seed=$(call wordd,$*,2) general workspace/profile-$*" \
 		jupyter-nbconvert --execute --allow-errors --ExecuteProcessor.timeout=-1 \
 		--output-dir=workspace/profile-$* --to=html $<
+
+inference_test : polychord-sampling.ipynb pypolychord
+	mkdir -p $@
+	ARGS="-f --nlive-factor=0.1 --nrepeat-factor=0.1 --temporal=exponential --seed=0 general $@" \
+		jupyter-nbconvert --execute --ExecuteProcessor.timeout=-1 --output-dir $@ --to=html $<
