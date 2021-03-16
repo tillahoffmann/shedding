@@ -410,6 +410,37 @@ class Parametrisation(enum.Enum):
     LOGNORMAL = 'lognormal'
 
 
+class Profile(enum.Enum):
+    EXPONENTIAL = 'exponential'
+    GAMMA = 'gamma'
+    TEUNIS = 'teunis'
+    CONSTANT = False
+
+    def evaluate_offset(self, day, values):
+        """
+        Evaluate the offset from the population-level location parameter due to the shedding
+        profile.
+
+        Parameters
+        ----------
+        values : dict
+            Parameter values for which to evaluate the offset.
+        """
+        if self == Profile.CONSTANT:
+            return 0
+        if self == Profile.EXPONENTIAL:
+            return values['slope'] * day
+        delta = day - values['profile_offset']
+        if self == Profile.GAMMA:
+            profile = values['profile_shape'] * np.log(delta) - values['profile_scale'] * delta
+        elif self == Profile.TEUNIS:
+            profile = np.log1p(-np.exp(-values['profile_rise'] * delta)) - \
+                values['profile_decay'] * delta
+        else:
+            raise ValueError(self)
+        return np.where(delta > 0, profile, -np.inf)
+
+
 class SimulationMode(enum.Enum):
     """
     Enum to indicate whether simulation should be for `EXISTING_PATIENTS` or `NEW_PATIENTS`. Given
@@ -555,7 +586,7 @@ class Model:
         self.num_patients = num_patients
         self.parametrisation = Parametrisation(parametrisation)
         self.inflated = inflated
-        self.temporal = temporal
+        self.temporal = Profile(temporal)
         # Using Stacey's parametrisation
         self.parameters = {
             'population_loc': (),
@@ -570,7 +601,7 @@ class Model:
             })
         if self.inflated:
             self.parameters['rho'] = ()
-        if self.temporal == 'gamma':
+        if self.temporal == Profile.GAMMA:
             # Parameters for the gamma distribution. Shape and scale as usual. Offset is just an
             # overall shift.
             self.parameters.update({
@@ -578,16 +609,14 @@ class Model:
                 'profile_shape': (),
                 'profile_scale': (),
             })
-        elif self.temporal == 'exponential':
+        elif self.temporal == Profile.EXPONENTIAL:
             self.parameters['slope'] = ()
-        elif self.temporal == 'teunis':
+        elif self.temporal == Profile.TEUNIS:
             self.parameters.update({
                 'profile_offset': (),
                 'profile_rise': (),
                 'profile_decay': (),
             })
-        elif self.temporal:
-            raise ValueError(self.temporal)
         self.size = evaluate_size(self.parameters)
 
         # Merge the supplied priors and default priors
@@ -604,13 +633,13 @@ class Model:
             })
         if self.inflated:
             default_priors['rho'] = UniformPrior(0, 1)
-        if self.temporal == 'gamma':
+        if self.temporal == Profile.GAMMA:
             default_priors['profile_offset'] = UniformPrior(-14, 7)
             default_priors['profile_shape'] = HalfCauchyPrior(scale=1)
             default_priors['profile_scale'] = HalfCauchyPrior(scale=1)
-        elif self.temporal == 'exponential':
+        elif self.temporal == Profile.EXPONENTIAL:
             default_priors['slope'] = CauchyPrior(loc=0, scale=1)
-        elif self.temporal == 'teunis':
+        elif self.temporal == Profile.TEUNIS:
             default_priors['profile_offset'] = UniformPrior(-14, 7)
             default_priors['profile_rise'] = HalfCauchyPrior(scale=1)
             default_priors['profile_decay'] = HalfCauchyPrior(scale=1)
@@ -665,17 +694,8 @@ class Model:
         q = values['patient_shape']
         sigma = values['patient_scale']
         mu = gengamma_loc(q, sigma, values['patient_mean'])
-        mu = np.repeat(mu, data['num_samples_by_patient'], axis=-1)
-        if self.temporal == 'gamma':
-            delta = data['day'] - values['profile_offset']
-            mu += np.where(delta < 0, -np.inf, (values['profile_shape']) * np.log(delta)
-                           - values['profile_scale'] * delta)
-        elif self.temporal == 'teunis':  # https://pubmed.ncbi.nlm.nih.gov/25336060/
-            delta = data['day'] - values['profile_offset']
-            mu += np.where(delta < 0, -np.inf, np.log1p(-np.exp(-values['profile_rise'] * delta))
-                           - values['profile_decay'] * delta)
-        elif self.temporal == 'exponential':
-            mu += values['slope'] * data['day']
+        mu = np.repeat(mu, data['num_samples_by_patient'], axis=-1) + \
+            self.temporal.evaluate_offset(data['day'], values)
         lxdf = gengamma_lpdf(q, mu, sigma, data['loadln'], where=data['positive'])
         gengamma_lcdf(q, mu, sigma, data['loqln'], out=lxdf, where=~data['positive'])
         return lxdf
@@ -823,9 +843,7 @@ class Model:
         mu = gengamma_loc(q, sigma, values['patient_mean'])
         mu = np.repeat(mu, data['num_samples_by_patient'])
         # Account for the time dependence if available
-        slope = values.get('slope')
-        if slope is not None:
-            mu += slope * data['day']
+        mu += self.temporal.evaluate_offset(data['day'], values)
         # Sample
         load = GengammaPrior.from_uniform(np.random.uniform(size=mu.size), q, mu, sigma)
 
