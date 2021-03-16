@@ -156,3 +156,6 @@ publications/*/*
 !publications/*/*.rst
 
 shedding/*.c
+
+# Don't commit the output of the inference test
+inference_test
