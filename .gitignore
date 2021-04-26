@@ -145,7 +145,7 @@ cython_debug/
 playground/
 playground_*
 .pystan
-workspace/
+*workspace/
 PolyChordLite/
 figures/
 

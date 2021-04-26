@@ -1,5 +1,7 @@
 .PHONY : clean docs doctests tests pypolychord inference_test
 
+JUPYTER_CMD = jupyter-nbconvert --execute --ExecuteProcessor.timeout=-1 --to=html
+
 build : flake8 tests docs
 
 flake8 :
@@ -50,11 +52,11 @@ INFLATED_inflated = --inflated
 TEMPORAL = constant temporal
 TEMPORAL_temporal = --temporal=exponential
 
-SEEDS = 0 1 2
+SEEDS ?= 0 1 2
 
 # See the polychord publication for reference
-NLIVE = 25
-NREPEAT = 5
+NLIVE ?= 25
+NREPEAT ?= 5
 
 TARGET_DIRS = $(addprefix workspace/,\
 	$(foreach s,${SEEDS}, \
@@ -71,8 +73,7 @@ evidences: ${EVIDENCE_TARGETS}
 
 $(EVIDENCE_TARGETS) : workspace/%/polychord/result.pkl : polychord-sampling.ipynb
 	ARGS="--evidence --seed=$(call wordd,$*,4) ${TEMPORAL_$(call wordd,$*,3)} ${INFLATED_$(call wordd,$*,2)} -f --nlive-factor=${NLIVE} --nrepeat-factor=${NREPEAT} $(call wordd,$*,1) workspace/$*/polychord" \
-		jupyter-nbconvert --execute --allow-errors --ExecuteProcessor.timeout=-1 \
-		--output-dir=workspace/$* --to=html $<
+		${JUPYTER_CMD} --output-dir=workspace/$* $<
 
 # Additional samples for the constant parameters including Wang's data
 EXTRA_TARGET_DIRS = $(addprefix workspace/,\
@@ -87,8 +88,7 @@ extra_samples : ${EXTRA_SAMPLE_TARGETS}
 
 $(EXTRA_SAMPLE_TARGETS) : workspace/%/polychord/result.pkl : polychord-sampling.ipynb
 	ARGS="--seed=$(call wordd,$*,4) ${INFLATED_$(call wordd,$*,2)} -f --nlive-factor=${NLIVE} --nrepeat-factor=${NREPEAT} $(call wordd,$*,1) workspace/$*/polychord" \
-		jupyter-nbconvert --execute --allow-errors --ExecuteProcessor.timeout=-1 \
-		--output-dir=workspace/$* --to=html $<
+		${JUPYTER_CMD} --output-dir=workspace/$* $<
 
 all : evidences extra_samples
 
@@ -100,9 +100,8 @@ SENSITIVITY_TARGETS = $(addsuffix /result.pkl,${SENSITIVITY_TARGET_DIRS})
 sensitivity : ${SENSITIVITY_TARGETS}
 
 ${SENSITIVITY_TARGETS} : workspace/sensitivity-%/result.pkl : polychord-sampling.ipynb
-	ARGS="-f --nlive-factor=5 --nrepeat-factor=2 --day-noise=$(call wordd,$*,1) --seed=$(call wordd,$*,2) --temporal general workspace/sensitivity-$*" \
-		jupyter-nbconvert --execute --allow-errors --ExecuteProcessor.timeout=-1 \
-		--output-dir=workspace/sensitivity-$* --to=html $<
+	ARGS="-f --nlive-factor=${NLIVE} --nrepeat-factor=${NREPEAT} --day-noise=$(call wordd,$*,1) --seed=$(call wordd,$*,2) --temporal general workspace/sensitivity-$*" \
+		${JUPYTER_CMD} --output-dir=workspace/sensitivity-$* $<
 
 
 # Targets for investigating different shedding profiles
@@ -113,10 +112,15 @@ profiles : ${PROFILE_TARGETS}
 
 ${PROFILE_TARGETS} : workspace/profile-%/result.pkl : polychord-sampling.ipynb
 	ARGS="-f --nlive-factor=25 --nrepeat-factor=5 --temporal=$(call wordd,$*,1) --seed=$(call wordd,$*,2) general workspace/profile-$*" \
-		jupyter-nbconvert --execute --allow-errors --ExecuteProcessor.timeout=-1 \
-		--output-dir=workspace/profile-$* --to=html $<
+		${JUPYTER_CMD} --output-dir=workspace/profile-$* $<
 
 inference_test : polychord-sampling.ipynb pypolychord
 	mkdir -p $@
 	ARGS="-f --nlive-factor=0.1 --nrepeat-factor=0.1 --temporal=exponential --seed=0 general $@" \
 		jupyter-nbconvert --execute --ExecuteProcessor.timeout=-1 --output-dir $@ --to=html $<
+
+FIGURES = model decay positivity-replicates prediction profiles replication shape-scale
+
+results.html $(addprefix figures/,${FIGURES:=.pdf}) : results.ipynb evidences extra_samples sensitivity profiles
+	mkdirs -p figures
+	${JUPYTER_CMD} $<
