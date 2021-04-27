@@ -62,6 +62,25 @@ Datasets can be found in the ``publications`` directory as JSON files following 
 
 Contributions in the form of new datasets or corrections are most welcome in the form of pull requests from forks. See `here <https://guides.github.com/activities/forking/>`__ for more details on how to contribute.
 
+🧪 Reproducing results
+----------------------
+
+Results can be reproduced by following these steps:
+
+* Make sure you have python 3.8 or newer installed.
+* Install the python dependencies by running :code:`pip install -r requirements.txt` (ideally in a dedicated virtual environment).
+* Install the polychord sampler by running :code:`make pypolychord`.
+* Reproduce the figures (in the :code:`figures` directory) and results (in the :code:`results.html` file) by running :code:`make results.html`.
+
+.. note::
+
+   Reproducing the results will take a considerable amount of time (several hours if you have a fast machine, days if you have a slow machine). You have two options to speed up the process (and they can be combined).
+
+   1. Use :code:`make -j [number of processors you use] results.html` which will distribute the workload across the given number of processors.
+   1. Use :code:`SEEDS=0 NLIVE=1 NREPEAT=1 make results.html` which will only run the inference for one random number generator seed and use fewer points for the nested sampling (giving rise to less reliably but faster results).
+
+If you are not able to reproduce the results using the steps above, try running :code:`make tests` which may help identify the problem. Otherwise, please `raise a new issue <https://github.com/tillahoffmann/shedding/issues>`__.
+
 📋 Contents
 -----------
 

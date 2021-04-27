@@ -145,7 +145,7 @@ cython_debug/
 playground/
 playground_*
 .pystan
-workspace/
+*workspace/
 PolyChordLite/
 figures/
 
@@ -159,3 +159,6 @@ shedding/*.c
 
 # Don't commit the output of the inference test
 inference_test
+
+# Don't commit result output
+results.html
