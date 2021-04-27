@@ -100,7 +100,7 @@ SENSITIVITY_TARGETS = $(addsuffix /result.pkl,${SENSITIVITY_TARGET_DIRS})
 sensitivity : ${SENSITIVITY_TARGETS}
 
 ${SENSITIVITY_TARGETS} : workspace/sensitivity-%/result.pkl : polychord-sampling.ipynb
-	ARGS="-f --nlive-factor=${NLIVE} --nrepeat-factor=${NREPEAT} --day-noise=$(call wordd,$*,1) --seed=$(call wordd,$*,2) --temporal general workspace/sensitivity-$*" \
+	ARGS="-f --nlive-factor=${NLIVE} --nrepeat-factor=${NREPEAT} --day-noise=$(call wordd,$*,1) --seed=$(call wordd,$*,2) --temporal exponential general workspace/sensitivity-$*" \
 		${JUPYTER_CMD} --output-dir=workspace/sensitivity-$* $<
 
 
@@ -111,7 +111,7 @@ PROFILE_TARGETS = $(addsuffix /result.pkl,${PROFILE_TARGET_DIRS})
 profiles : ${PROFILE_TARGETS}
 
 ${PROFILE_TARGETS} : workspace/profile-%/result.pkl : polychord-sampling.ipynb
-	ARGS="-f --nlive-factor=25 --nrepeat-factor=5 --temporal=$(call wordd,$*,1) --seed=$(call wordd,$*,2) general workspace/profile-$*" \
+	ARGS="-f --nlive-factor=${NLIVE} --nrepeat-factor=${NREPEAT} --temporal=$(call wordd,$*,1) --seed=$(call wordd,$*,2) general workspace/profile-$*" \
 		${JUPYTER_CMD} --output-dir=workspace/profile-$* $<
 
 inference_test : polychord-sampling.ipynb pypolychord
@@ -122,5 +122,5 @@ inference_test : polychord-sampling.ipynb pypolychord
 FIGURES = model decay positivity-replicates prediction profiles replication shape-scale
 
 results.html $(addprefix figures/,${FIGURES:=.pdf}) : results.ipynb evidences extra_samples sensitivity profiles
-	mkdirs -p figures
+	mkdir -p figures
 	${JUPYTER_CMD} $<
