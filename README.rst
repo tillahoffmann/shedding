@@ -69,7 +69,7 @@ Results can be reproduced by following these steps:
 
 * Make sure you have python 3.8 or newer installed.
 * Install the python dependencies by running :code:`pip install -r requirements.txt` (ideally in a dedicated virtual environment).
-* Install the polychord sampler by running :code:`make pypolychord`.
+* Install the polychord sampler by running :code:`make pypolychord` (you may have to run :code:`make pypolychord` twice if it fails in the first run).
 * Reproduce the figures (in the :code:`figures` directory) and results (in the :code:`results.html` file) by running :code:`make results.html`.
 
 .. note::
