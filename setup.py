@@ -24,6 +24,7 @@ setup(
     packages=find_packages(),
     author='Till Hoffmann',
     install_requires=[
+        'doit-interface',
         'numpy',
         'scipy',
         'cyfunc>=0.1.4',
