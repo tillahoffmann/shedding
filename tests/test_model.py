@@ -75,12 +75,12 @@ def test_transpose_samples_roundtrip():
 
 
 @pytest.fixture(params=it.product(shedding.Parametrisation, [False, True], shedding.Profile))
-def model(request):
+def model(request) -> shedding.Model:
     return shedding.Model(10, *request.param)
 
 
 @pytest.fixture
-def data(model):
+def data(model: shedding.Model):
     num_samples_by_patient = 2
     n = model.num_patients * num_samples_by_patient
     loq = np.random.gamma(1, size=n)
@@ -102,14 +102,14 @@ def data(model):
     }
 
 
-def test_model_from_vector(model, data):
+def test_model_from_vector(model: shedding.Model, data):
     x = np.random.uniform(0, 1, model.size)
     y = model.sample_params_from_vector(x)
     model.evaluate_log_likelihood_from_vector(y, data)
 
 
 @pytest.fixture
-def hyperparameters(model):
+def hyperparameters(model: shedding.Model):
     if model.parametrisation == shedding.Parametrisation.LOGNORMAL:
         params = {'patient_scale': 1, 'population_scale': 1, 'population_loc': 1,
                   'patient_shape': np.float64(0), 'population_shape': np.float64(0)}
@@ -141,7 +141,7 @@ def hyperparameters(model):
     return params
 
 
-def test_simulate(model, hyperparameters, data):
+def test_simulate(model: shedding.Model, hyperparameters, data):
     # Keep a copy of the hyperparameters
     values = dict(hyperparameters)
     data = model.simulate(values, data, 'new_patients')
@@ -157,16 +157,16 @@ def test_simulate(model, hyperparameters, data):
             np.testing.assert_array_equal(d['positive'][~z], False)
 
 
-def test_marginal_log_likelihood(model, hyperparameters, data):
+def test_marginal_log_likelihood(model: shedding.Model, hyperparameters, data):
     marginal = model.evaluate_marginal_log_likelihood(hyperparameters, data)
     assert marginal.shape == (data['num_patients'],)
 
 
-def test_evaluate_mean(model, hyperparameters):
+def test_evaluate_mean(model: shedding.Model, hyperparameters):
     assert model.evaluate_statistic(hyperparameters, 'mean') > 0
 
 
-def test_rvs(model, hyperparameters):
+def test_rvs(model: shedding.Model, hyperparameters):
     sample = model.rvs(hyperparameters, 100)
     assert np.shape(sample) == (100,)
     if model.inflated:
@@ -174,7 +174,7 @@ def test_rvs(model, hyperparameters):
     np.testing.assert_array_less(0, sample)
 
 
-def test_log_joint(model, hyperparameters, data):
+def test_log_joint(model: shedding.Model, hyperparameters, data):
     # Generate some data
     values = dict(hyperparameters)
     data = model.simulate(values, data, 'new_patients')
@@ -182,7 +182,7 @@ def test_log_joint(model, hyperparameters, data):
     assert np.isscalar(log_joint) and np.isfinite(log_joint)
 
 
-def test_transform(model):
+def test_transform(model: shedding.Model):
     transform = shedding.DefaultTransformation()
     original = {key: np.random.normal(0, 1, value) for key, value in model.parameters.items()}
     transformed = transform(original)
