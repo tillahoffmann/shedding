@@ -1,6 +1,6 @@
-.PHONY : clean docs doctests tests pypolychord inference_test
+.PHONY : clean docs doctests tests pypolychord inference_test clean-results
 
-JUPYTER_CMD = jupyter-nbconvert --execute --ExecuteProcessor.timeout=-1 --to=html
+JUPYTER_CMD = MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 OMP_NUM_THREADS=1 jupyter-nbconvert --execute --ExecuteProcessor.timeout=-1 --to=html
 
 build : flake8 tests docs
 
@@ -18,6 +18,9 @@ docs : doctests
 
 clean :
 	rm -rf docs/_build PolyChordLite
+
+clean-results:
+	rm -rf workspace figures results.html
 
 # Generate pinned dependencies
 requirements.txt : requirements.in setup.py
