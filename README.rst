@@ -79,6 +79,10 @@ Results can be reproduced by following these steps:
    1. Use :code:`make -j [number of processors you use] results.html` which will distribute the workload across the given number of processors.
    2. Use :code:`SEEDS=0 NLIVE=1 NREPEAT=1 make results.html` which will only run the inference for one random number generator seed and use fewer points for the nested sampling (giving rise to less reliably but faster results).
 
+.. note::
+
+   Storing intermediate results produced by :code:`pypolychord` can take up to 10GB of disk space.
+
 If you are not able to reproduce the results using the steps above, try running :code:`make tests` which may help identify the problem. Otherwise, please `raise a new issue <https://github.com/tillahoffmann/shedding/issues>`__.
 
 📋 Contents
