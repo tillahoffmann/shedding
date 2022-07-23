@@ -36,7 +36,7 @@ gh-action :
 	act -P ubuntu-latest=nektos/act-environments-ubuntu:18.04
 
 PolyChordLite :
-	git clone --depth 1 --branch 1.20.1 https://github.com/PolyChord/PolyChordLite.git
+	git clone --depth 1 --branch 1.18.1 https://github.com/PolyChord/PolyChordLite.git
 
 pypolychord : PolyChordLite
 	cd PolyChordLite \
