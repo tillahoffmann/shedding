@@ -157,8 +157,9 @@ def test_simulate(model: shedding.Model, hyperparameters, data):
             np.testing.assert_array_equal(d['positive'][~z], False)
 
 
-def test_marginal_log_likelihood(model: shedding.Model, hyperparameters, data):
-    marginal = model.evaluate_marginal_log_likelihood(hyperparameters, data)
+@pytest.mark.parametrize("n", [100, "scipy"])
+def test_marginal_log_likelihood(model: shedding.Model, hyperparameters, data, n):
+    marginal = model.evaluate_marginal_log_likelihood(hyperparameters, data, n=n)
     assert marginal.shape == (data['num_patients'],)
 
 
@@ -201,3 +202,17 @@ def test_transform(model: shedding.Model):
 def test_prior_normalisation(prior, domain):
     y, abserr = integrate.quad(lambda x: np.exp(prior.lpdf(x)), *domain)
     assert np.abs(1 - y) < 3 * abserr
+
+
+def test_likelihood(model: shedding.Model, data: dict):
+    # Sample from the prior many times and ensure the likelihood can be evaluated.
+    log_likelihoods = []
+    for _ in range(1_000):
+        # Validate that we can sample and evaluate
+        x = np.random.uniform(size=model.size)
+        y = model.sample_params_from_vector(x)
+        log_likelihood, _ = model.evaluate_log_likelihood_from_vector(y, data)
+        assert np.isfinite(log_likelihood)
+        log_likelihoods.append(log_likelihood)
+
+    assert np.max(log_likelihoods) > -1e4

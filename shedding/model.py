@@ -3,11 +3,11 @@ import enum
 import functools as ft
 import inspect
 import numpy as np
-from scipy import special
+from scipy import integrate, special
 from .util import flush_traceback, logmeanexp
 # Importing _util breaks the readthedocs build. Omit if when we're building the documentation.
 import os
-if not os.environ.get('READTHEDOCS'):
+if not os.environ.get('READTHEDOCS'):  # pragma: no cover
     from ._util import gengamma_lpdf, gengamma_lcdf, gengamma_loc
 
 
@@ -677,7 +677,7 @@ class Model:
         return values
 
     @_augment_values
-    def _evaluate_sample_log_likelihood(self, values, data):
+    def _evaluate_sample_log_likelihood(self, values, data, i: int = None):
         """
         Evaluate the log likelihood for each sample conditional on all model parameters, assuming
         that all patients shed virus.
@@ -688,6 +688,8 @@ class Model:
             Parameter values.
         data : dict
             Data from which the posterior samples were inferred.
+        i : int
+            Index of the sample to evaluate the log likelihood for (defaults to all).
 
         Returns
         -------
@@ -697,10 +699,17 @@ class Model:
         q = values['patient_shape']
         sigma = values['patient_scale']
         mu = gengamma_loc(q, sigma, values['patient_mean'])
-        mu = np.repeat(mu, data['num_samples_by_patient'], axis=-1) + \
-            self.temporal.evaluate_offset(data['day'], values)
-        lxdf = gengamma_lpdf(q, mu, sigma, data['loadln'], where=data['positive'])
-        gengamma_lcdf(q, mu, sigma, data['loqln'], out=lxdf, where=~data['positive'])
+        if i is None:
+            mu = np.repeat(mu, data['num_samples_by_patient'], axis=-1) + \
+                self.temporal.evaluate_offset(data['day'], values)
+            lxdf = gengamma_lpdf(q, mu, sigma, data['loadln'], where=data['positive'])
+            gengamma_lcdf(q, mu, sigma, data['loqln'], out=lxdf, where=~data['positive'])
+        else:
+            mu = mu + self.temporal.evaluate_offset(data['day'][i], values)
+            if data['positive'][i]:
+                lxdf = gengamma_lpdf(q, mu, sigma, data['loadln'][i])
+            else:
+                lxdf = gengamma_lcdf(q, mu, sigma, data['loqln'][i])
         return lxdf
 
     @_augment_values
@@ -728,7 +737,7 @@ class Model:
 
     @broadcast_samples
     @_augment_values
-    def evaluate_marginal_log_likelihood(self, values, data, n=1000, **kwargs):
+    def evaluate_marginal_log_likelihood(self, values, data, n=1000, eps=1e-6, **kwargs):
         """
         Evaluate the log likelihood of the observed data marginalised with respect to group-level
         parameters but conditional on hyperparameters.
@@ -739,28 +748,55 @@ class Model:
             Posterior sample.
         data : dict
             Data from which the posterior samples were inferred.
-        n : int
-            Number of samples to use if simulation is required to evaluate the likelihood.
+        n : int or str
+            Number of samples to use if simulation is required to evaluate the likelihood or `scipy`
+            for numerical integration.
+        eps: float
+            Value to clip the patient mean at to avoid underflows.
 
         Returns
         -------
         likelihood : np.ndarray[num_patients]
             Marginal log likelihood for each patient.
         """
-        values = dict(values)
-        # Sample the patient means
-        uniform = np.random.uniform(size=(n, data['num_patients']))
-        values['patient_mean'] = GengammaPrior.from_uniform(
-            uniform, values['population_shape'], values['population_loc'],
-            values['population_scale'])
-        # Evaluate the sample log likelihood and marginalise with respect to the patient-level
-        # attributes
-        sample_likelihood = self._evaluate_sample_log_likelihood(values, data)
-        sample_likelihood = logmeanexp(sample_likelihood, axis=0)
+        if isinstance(n, int):
+            values = dict(values)
+            # Sample the patient means
+            uniform = np.random.uniform(size=(n, data['num_patients']))
+            values['patient_mean'] = np.maximum(GengammaPrior.from_uniform(
+                uniform, values['population_shape'], values['population_loc'],
+                values['population_scale']), eps)
+            # Evaluate the sample log likelihood and marginalise with respect to the patient-level
+            # attributes
+            sample_likelihood = self._evaluate_sample_log_likelihood(values, data)
+            sample_likelihood = logmeanexp(sample_likelihood, axis=0)
 
-        # Aggregate by patient
-        patient_likelihood = np.bincount(data['idx'], sample_likelihood,
-                                         minlength=data['num_patients'])
+            # Aggregate by patient
+            patient_likelihood = np.bincount(data['idx'], sample_likelihood,
+                                             minlength=data['num_patients'])
+        elif n == "scipy":
+            def _func(x, patient):
+                """
+                Evaluate the marginal likelihood of a patient.
+                """
+                # Copy the posterior parameters and update with the value of interest.
+                patient_mean = np.maximum(GengammaPrior.from_uniform(
+                    x, values['population_shape'], values['population_loc'],
+                    values['population_scale']), eps)
+                _values = dict(values)
+                _values["patient_mean"] = patient_mean
+                return np.exp(sum(
+                    self._evaluate_sample_log_likelihood(_values, data, i=i) for i in
+                    np.where(data["idx"] == patient)[0]
+                ))
+
+            patient_likelihood = np.nan * np.empty(data['num_patients'])
+            for patient in range(patient_likelihood.size):
+                y, *_ = integrate.quad(_func, 0, 1, (patient,))
+                patient_likelihood[patient] = np.log(y)
+        else:
+            raise ValueError(n)
+
         if not self.inflated:
             return patient_likelihood
 
