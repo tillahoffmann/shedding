@@ -1,0 +1,16 @@
+.eggs
+.git
+.gitignore
+.ipynb_checkpoints
+.pytest_cache
+.vscode
+__pycache__
+build
+htmlcov
+Dockerfile
+playground
+PolyChordLite
+# Don't include generated cython sources or binaries.
+shedding/_util.c
+shedding/_util.*.so
+workspace

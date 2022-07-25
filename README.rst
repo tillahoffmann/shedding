@@ -70,7 +70,13 @@ Results can be reproduced by following these steps:
 * Make sure you have python 3.8 or newer installed.
 * Install the python dependencies by running :code:`pip install -r requirements.txt` (ideally in a dedicated virtual environment).
 * Install the polychord sampler by running :code:`make pypolychord` (you may have to run :code:`make pypolychord` twice if it fails in the first run).
-* Reproduce the figures (in the :code:`figures` directory) and results (in the :code:`results.html` file) by running :code:`make results.html`.
+* Reproduce the figures (in the :code:`workspace/figures` directory) and results (in the :code:`results.html` file) by running :code:`make workspace/results.html`.
+
+If you are familiar with `docker <https://www.docker.com>`__, you may also reproduce results in a container by following these steps:
+
+* Run :code:`make image` to build the docker image.
+* Run :code:`make container` to start a container with the :code:`workspace` folder mounted.
+* Reproduce the figures (in the :code:`workspace/figures` directory) and results (in the :code:`results.html` file) by running :code:`make workspace/results.html`.
 
 .. note::
 
