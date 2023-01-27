@@ -6,128 +6,166 @@
 #
 -e file:.
     # via -r requirements.in
-alabaster==0.7.12
+alabaster==0.7.13
     # via sphinx
+anyio==3.6.2
+    # via jupyter-server
 appnope==0.1.3
     # via
     #   ipykernel
     #   ipython
 argon2-cffi==21.3.0
-    # via notebook
+    # via
+    #   jupyter-server
+    #   nbclassic
+    #   notebook
 argon2-cffi-bindings==21.2.0
     # via argon2-cffi
-asttokens==2.0.5
+arrow==1.2.3
+    # via isoduration
+asttokens==2.2.1
     # via stack-data
-attrs==21.4.0
+attrs==22.2.0
     # via
     #   jsonschema
     #   pytest
-babel==2.10.3
+babel==2.11.0
     # via sphinx
 backcall==0.2.0
     # via ipython
 beautifulsoup4==4.11.1
     # via nbconvert
-bleach==5.0.1
+bleach==6.0.0
     # via nbconvert
-certifi==2022.6.15
+certifi==2022.12.7
     # via requests
 cffi==1.15.1
     # via argon2-cffi-bindings
-charset-normalizer==2.1.0
+charset-normalizer==3.0.1
     # via requests
-coverage[toml]==6.4.2
+comm==0.1.2
+    # via ipykernel
+contourpy==1.0.7
+    # via matplotlib
+coverage[toml]==7.1.0
     # via pytest-cov
 cycler==0.11.0
     # via matplotlib
 cyfunc==0.1.4
     # via shedding
-cython==0.29.30
+cython==0.29.33
     # via cyfunc
-debugpy==1.6.2
+debugpy==1.6.6
     # via ipykernel
 decorator==5.1.1
     # via ipython
 defusedxml==0.7.1
     # via nbconvert
-docutils==0.18.1
+docutils==0.19
     # via sphinx
-entrypoints==0.4
+exceptiongroup==1.1.0
+    # via pytest
+executing==1.2.0
+    # via stack-data
+fastjsonschema==2.16.2
+    # via nbformat
+flake8==6.0.0
+    # via shedding
+fonttools==4.38.0
+    # via matplotlib
+fqdn==1.5.1
+    # via jsonschema
+fspath==20190323
+    # via linuxdoc
+idna==3.4
+    # via
+    #   anyio
+    #   jsonschema
+    #   requests
+imagesize==1.4.1
+    # via sphinx
+importlib-metadata==6.0.0
     # via
     #   jupyter-client
     #   nbconvert
-executing==0.8.3
-    # via stack-data
-fastjsonschema==2.16.1
-    # via nbformat
-flake8==4.0.1
-    # via shedding
-fonttools==4.34.4
-    # via matplotlib
-fspath==20190323
-    # via linuxdoc
-idna==3.3
-    # via requests
-imagesize==1.4.1
-    # via sphinx
-importlib-metadata==4.12.0
-    # via sphinx
-importlib-resources==5.9.0
+    #   sphinx
+importlib-resources==5.10.2
     # via jsonschema
-iniconfig==1.1.1
+iniconfig==2.0.0
     # via pytest
-ipykernel==6.15.1
+ipykernel==6.20.2
     # via
     #   ipywidgets
     #   jupyter
     #   jupyter-console
+    #   nbclassic
     #   notebook
     #   qtconsole
-ipython==8.4.0
+ipython==8.8.0
     # via
     #   ipykernel
     #   ipywidgets
     #   jupyter-console
 ipython-genutils==0.2.0
     # via
-    #   ipywidgets
+    #   nbclassic
     #   notebook
     #   qtconsole
-ipywidgets==7.7.1
+ipywidgets==8.0.4
     # via jupyter
-jedi==0.18.1
+isoduration==20.11.0
+    # via jsonschema
+jedi==0.18.2
     # via ipython
 jinja2==3.1.2
     # via
+    #   jupyter-server
+    #   nbclassic
     #   nbconvert
     #   notebook
     #   shedding
     #   sphinx
-jsonschema==4.7.2
+jsonpointer==2.3
+    # via jsonschema
+jsonschema[format-nongpl]==4.17.3
     # via
+    #   jupyter-events
     #   nbformat
     #   shedding
 jupyter==1.0.0
     # via -r requirements.in
-jupyter-client==7.3.4
+jupyter-client==8.0.1
     # via
     #   ipykernel
     #   jupyter-console
+    #   jupyter-server
+    #   nbclassic
     #   nbclient
     #   notebook
     #   qtconsole
 jupyter-console==6.4.4
     # via jupyter
-jupyter-core==4.11.1
+jupyter-core==5.1.5
     # via
     #   jupyter-client
+    #   jupyter-server
+    #   nbclassic
+    #   nbclient
     #   nbconvert
     #   nbformat
     #   notebook
     #   qtconsole
+jupyter-events==0.6.3
+    # via jupyter-server
+jupyter-server==2.1.0
+    # via
+    #   nbclassic
+    #   notebook-shim
+jupyter-server-terminals==0.4.4
+    # via jupyter-server
 jupyterlab-pygments==0.2.2
     # via nbconvert
-jupyterlab-widgets==1.1.1
+jupyterlab-widgets==3.0.5
     # via ipywidgets
 kiwisolver==1.4.4
     # via matplotlib
@@ -135,57 +173,64 @@ linuxdoc @ git+http://github.com/return42/linuxdoc.git
     # via shedding
 localscope==0.1.3
     # via -r requirements.in
-markupsafe==2.1.1
+markupsafe==2.1.2
     # via
     #   jinja2
     #   nbconvert
-matplotlib==3.5.2
+matplotlib==3.6.3
     # via shedding
-matplotlib-inline==0.1.3
+matplotlib-inline==0.1.6
     # via
     #   ipykernel
     #   ipython
-mccabe==0.6.1
+mccabe==0.7.0
     # via flake8
-mistune==0.8.4
+mistune==2.0.4
     # via nbconvert
-nbclient==0.6.6
+nbclassic==0.5.1
+    # via notebook
+nbclient==0.7.2
     # via nbconvert
-nbconvert==6.5.0
+nbconvert==7.2.9
     # via
     #   jupyter
+    #   jupyter-server
+    #   nbclassic
     #   notebook
-nbformat==5.4.0
+nbformat==5.7.3
     # via
+    #   jupyter-server
+    #   nbclassic
     #   nbclient
     #   nbconvert
     #   notebook
-nest-asyncio==1.5.5
+nest-asyncio==1.5.6
     # via
     #   ipykernel
-    #   jupyter-client
-    #   nbclient
+    #   nbclassic
     #   notebook
-notebook==6.4.12
+notebook==6.5.2
+    # via jupyter
+notebook-shim==0.2.2
+    # via nbclassic
+numpy==1.24.1
     # via
-    #   jupyter
-    #   widgetsnbextension
-numpy==1.23.1
-    # via
+    #   contourpy
     #   cyfunc
     #   matplotlib
     #   pandas
     #   scipy
     #   shedding
-packaging==21.3
+packaging==23.0
     # via
     #   ipykernel
+    #   jupyter-server
     #   matplotlib
     #   nbconvert
     #   pytest
     #   qtpy
     #   sphinx
-pandas==1.4.3
+pandas==1.5.3
     # via -r requirements.in
 pandocfilters==1.5.0
     # via nbconvert
@@ -195,17 +240,24 @@ pexpect==4.8.0
     # via ipython
 pickleshare==0.7.5
     # via ipython
-pillow==9.2.0
+pillow==9.4.0
     # via matplotlib
+pkgutil-resolve-name==1.3.10
+    # via jsonschema
+platformdirs==2.6.2
+    # via jupyter-core
 pluggy==1.0.0
     # via pytest
-prometheus-client==0.14.1
-    # via notebook
-prompt-toolkit==3.0.30
+prometheus-client==0.16.0
+    # via
+    #   jupyter-server
+    #   nbclassic
+    #   notebook
+prompt-toolkit==3.0.36
     # via
     #   ipython
     #   jupyter-console
-psutil==5.9.1
+psutil==5.9.4
     # via ipykernel
 ptyprocess==0.7.0
     # via
@@ -213,15 +265,13 @@ ptyprocess==0.7.0
     #   terminado
 pure-eval==0.2.2
     # via stack-data
-py==1.11.0
-    # via pytest
-pycodestyle==2.8.0
+pycodestyle==2.10.0
     # via flake8
 pycparser==2.21
     # via cffi
-pyflakes==2.4.0
+pyflakes==3.0.1
     # via flake8
-pygments==2.12.0
+pygments==2.14.0
     # via
     #   ipython
     #   jupyter-console
@@ -229,55 +279,73 @@ pygments==2.12.0
     #   qtconsole
     #   sphinx
 pyparsing==3.0.9
-    # via
-    #   matplotlib
-    #   packaging
-pyrsistent==0.18.1
+    # via matplotlib
+pyrsistent==0.19.3
     # via jsonschema
-pytest==7.1.2
+pytest==7.2.1
     # via
     #   pytest-cov
     #   shedding
-pytest-cov==3.0.0
+pytest-cov==4.0.0
     # via shedding
 python-dateutil==2.8.2
     # via
     #   jupyter-client
     #   matplotlib
     #   pandas
-pytz==2022.1
+python-json-logger==2.0.4
+    # via jupyter-events
+pytz==2022.7.1
     # via
     #   babel
     #   pandas
-pyzmq==23.2.0
+pyyaml==6.0
+    # via jupyter-events
+pyzmq==25.0.0
     # via
     #   ipykernel
     #   jupyter-client
+    #   jupyter-server
+    #   nbclassic
     #   notebook
     #   qtconsole
-qtconsole==5.3.1
+qtconsole==5.4.0
     # via jupyter
-qtpy==2.1.0
+qtpy==2.3.0
     # via qtconsole
-requests==2.28.1
+requests==2.28.2
     # via sphinx
-scipy==1.8.1
+rfc3339-validator==0.1.4
+    # via
+    #   jsonschema
+    #   jupyter-events
+rfc3986-validator==0.1.1
+    # via
+    #   jsonschema
+    #   jupyter-events
+scipy==1.10.0
     # via shedding
 send2trash==1.8.0
-    # via notebook
+    # via
+    #   jupyter-server
+    #   nbclassic
+    #   notebook
 six==1.16.0
     # via
     #   asttokens
     #   bleach
     #   fspath
     #   python-dateutil
+    #   rfc3339-validator
+sniffio==1.3.0
+    # via anyio
 snowballstemmer==2.2.0
     # via sphinx
 soupsieve==2.3.2.post1
     # via beautifulsoup4
-sphinx==5.0.2
+sphinx==6.1.3
     # via shedding
-sphinxcontrib-applehelp==1.0.2
+sphinxcontrib-applehelp==1.0.4
     # via sphinx
 sphinxcontrib-devhelp==1.0.2
     # via sphinx
@@ -289,11 +357,15 @@ sphinxcontrib-qthelp==1.0.3
     # via sphinx
 sphinxcontrib-serializinghtml==1.1.5
     # via sphinx
-stack-data==0.3.0
+stack-data==0.6.2
     # via ipython
-terminado==0.15.0
-    # via notebook
-tinycss2==1.1.1
+terminado==0.17.1
+    # via
+    #   jupyter-server
+    #   jupyter-server-terminals
+    #   nbclassic
+    #   notebook
+tinycss2==1.2.1
     # via nbconvert
 tomli==2.0.1
     # via
@@ -303,34 +375,46 @@ tornado==6.2
     # via
     #   ipykernel
     #   jupyter-client
+    #   jupyter-server
+    #   nbclassic
     #   notebook
     #   terminado
-tqdm==4.64.0
+tqdm==4.64.1
     # via -r requirements.in
-traitlets==5.3.0
+traitlets==5.8.1
     # via
+    #   comm
     #   ipykernel
     #   ipython
     #   ipywidgets
     #   jupyter-client
     #   jupyter-core
+    #   jupyter-events
+    #   jupyter-server
     #   matplotlib-inline
+    #   nbclassic
     #   nbclient
     #   nbconvert
     #   nbformat
     #   notebook
     #   qtconsole
-urllib3==1.26.10
+uri-template==1.2.0
+    # via jsonschema
+urllib3==1.26.14
     # via requests
-wcwidth==0.2.5
+wcwidth==0.2.6
     # via prompt-toolkit
+webcolors==1.12
+    # via jsonschema
 webencodings==0.5.1
     # via
     #   bleach
     #   tinycss2
-widgetsnbextension==3.6.1
+websocket-client==1.5.0
+    # via jupyter-server
+widgetsnbextension==4.0.5
     # via ipywidgets
-zipp==3.8.1
+zipp==3.11.0
     # via
     #   importlib-metadata
     #   importlib-resources
