@@ -105,7 +105,6 @@ jinja_context['modules'] = list(sorted(modules))
 project = 'shedding'
 copyright = '2020, Till Hoffmann'
 author = 'Till Hoffmann'
-master_doc = 'README'
 
 
 # -- General configuration ---------------------------------------------------
