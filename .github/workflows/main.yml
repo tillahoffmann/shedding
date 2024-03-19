@@ -19,6 +19,10 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: "3.10"
+    - name: Preinstall cython and cyfunc
+      run: |
+        pip install `cat requirements.txt | grep cython==`
+        pip install `cat requirements.txt | grep cyfunc==`
     - name: Install dependencies
       run: pip install -r requirements.txt
     - name: Build docs, lint, and test
