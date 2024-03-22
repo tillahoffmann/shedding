@@ -18,6 +18,7 @@ docs : doctests
 
 clean :
 	rm -rf docs/_build PolyChordLite
+	rm -f shedding/*.so shedding/*.c
 
 clean-results:
 	rm -rf workspace figures results.html
