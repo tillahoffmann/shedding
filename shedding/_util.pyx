@@ -1,5 +1,3 @@
-cimport numpy as np
-from cyfunc cimport get_value, set_value, create_signature, register_cyfunc
 from libc cimport math
 cimport cython
 cimport scipy.special.cython_special as cspecial
@@ -10,13 +8,10 @@ cdef:
     double _SQRT2 = math.sqrt(2)
 
 
+@cython.ufunc
 @cython.cdivision(True)
-cdef void gengamma_lpdf_d(char** args, void* data):
+cdef double gengamma_lpdf(double q, double mu, double sigma, double logx):
     cdef:
-        double q = get_value[double](args, 0, 0)
-        double mu = get_value[double](args, 1, 0)
-        double sigma = get_value[double](args, 2, 0)
-        double logx = get_value[double](args, 3, 0)
         double z = (logx - mu) / sigma
         double logsigma = math.log(sigma)
         double value, s, a, logq
@@ -33,17 +28,13 @@ cdef void gengamma_lpdf_d(char** args, void* data):
         logq = math.log(q)
         value = logq - logsigma - math.lgamma(a) - 2 * a * logq + (a * q / sigma - 1) * logx - \
             a * (mu * q / sigma + math.exp(q * z))
+    return value
 
-    set_value(args, 4, value)
 
-
+@cython.ufunc
 @cython.cdivision(True)
-cdef void gengamma_lcdf_d(char** args, void* data):
+cdef double gengamma_lcdf(double q, double mu, double sigma, double logx):
     cdef:
-        double q = get_value[double](args, 0, 0)
-        double mu = get_value[double](args, 1, 0)
-        double sigma = get_value[double](args, 2, 0)
-        double logx = get_value[double](args, 3, 0)
         double z = (logx - mu) / sigma
         double value
 
@@ -57,18 +48,14 @@ cdef void gengamma_lcdf_d(char** args, void* data):
         value = cspecial.gammainc(value, value * math.exp(q * z))
 
     if value == 0:
-        set_value[double](args, 4, -math.INFINITY)
+        return -math.INFINITY
     else:
-        set_value(args, 4, math.log(value))
+        return math.log(value)
 
 
+@cython.ufunc
 @cython.cdivision(True)
-cdef void gengamma_loc_d(char** args, void* data):
-    cdef:
-        double q = get_value[double](args, 0, 0)
-        double sigma = get_value[double](args, 1, 0)
-        double mean = get_value[double](args, 2, 0)
-
+cdef double gengamma_loc(double q, double sigma, double mean):
     if q == 0:
         value = sigma * sigma / 2
     elif q < 1e-6:
@@ -76,15 +63,4 @@ cdef void gengamma_loc_d(char** args, void* data):
     else:
         value = 1 / (q * q)
         value = math.lgamma(value + sigma / q) - math.lgamma(value) - math.log(value) * sigma / q
-    set_value(args, 3, math.log(mean) - value)
-
-
-signature = create_signature([float, float, float, float], [float], gengamma_lpdf_d, <void*>0)
-gengamma_lpdf = register_cyfunc('gengamma_lpdf', '[gengamma_lpdf docstring]', [signature])
-
-signature = create_signature([float, float, float, float], [float], gengamma_lcdf_d, <void*>0)
-gengamma_lcdf = register_cyfunc('gengamma_lcdf', '[gengamma_lcdf docstring]', [signature])
-
-signature = create_signature([float, float, float], [float], gengamma_loc_d, <void*>0)
-gengamma_loc = register_cyfunc('gengamma_lloc', '[gengamma_loc docstring]', [signature])
-
+    return math.log(mean) - value

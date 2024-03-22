@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools", "wheel", "Cython", "numpy", "scipy"]
+
+[project]
+name = 'shedding'
+version = '0.1'
+authors = [{ name = 'Till Hoffmann' }]
+dependencies = ['numpy', 'scipy']
+
+[tool.setuptools]
+packages = ['shedding']

@@ -1,5 +1,14 @@
--e file:.[tests,docs]
+-e file:.
+cython
+flake8
+jinja2
+jsonschema
 jupyter
+linuxdoc @ git+http://github.com/return42/linuxdoc.git
 localscope
+matplotlib
 pandas
+pytest
+pytest-cov
+sphinx
 tqdm
