@@ -36,8 +36,11 @@ sync : requirements.txt
 gh-action :
 	act -P ubuntu-latest=nektos/act-environments-ubuntu:18.04
 
+POLYCHORDLITE_COMMIT = daba49d
 PolyChordLite :
-	git clone --depth 1 --branch 1.18.1 https://github.com/PolyChord/PolyChordLite.git
+	curl -L -o polychordlite-source.zip https://github.com/PolyChord/PolyChordLite/archive/${POLYCHORDLITE_COMMIT}.zip
+	unzip polychordlite-source.zip
+	mv PolyChordLite-${POLYCHORDLITE_COMMIT}* PolyChordLite
 
 pypolychord : PolyChordLite
 	cd PolyChordLite \

@@ -147,6 +147,7 @@ playground_*
 .pystan
 *workspace/
 PolyChordLite/
+polychordlite-source.zip
 figures/
 
 # Exclude everything in the publications folder ...
