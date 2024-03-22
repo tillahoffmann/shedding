@@ -1,4 +1,5 @@
 -e file:.[tests,docs]
+cython
 jupyter
 localscope
 pandas

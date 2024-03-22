@@ -1,13 +1,12 @@
-from setuptools import setup, find_packages, Extension
+from setuptools import setup, find_packages
 
 
-# Try to build from source if cython is installed, use preprocessed C file otherwise.
+# Cythonize utility functions.
 try:
     from Cython.Build import cythonize
     ext = cythonize('shedding/_util.pyx', language_level=3)
 except ImportError:
-    assert False
-    ext = [Extension('_util', ['shedding/_util.c'])]
+    raise RuntimeError('Install cython, then try installing the package again.')
 
 
 class numpy_include(object):
