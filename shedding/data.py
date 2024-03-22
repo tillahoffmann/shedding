@@ -22,7 +22,7 @@ def load_dataset(name, root=None):
         Loaded dataset as a dictionary.
     """
     root = root or os.getcwd()
-    with open(os.path.join(root, name, name + '.json')) as fp:
+    with open(os.path.join(root, name, name + ".json")) as fp:
         return json.load(fp)
 
 
@@ -98,45 +98,50 @@ def flatten_datasets(datasets, loq_fill_value=np.nan, day_fill_value=np.nan):
     num_positives_by_patient = collections.Counter()
     num_negatives_by_patient = collections.Counter()
     for key, dataset in datasets.items():
-        loq = 10 ** dataset['loq']
-        for i, x in enumerate(dataset['loads']):
+        loq = 10 ** dataset["loq"]
+        for i, x in enumerate(dataset["loads"]):
             # Flatten dataset-level attributes
-            data.setdefault('loq', []).append(loq)
-            data.setdefault('dataset', []).append(key)
+            data.setdefault("loq", []).append(loq)
+            data.setdefault("dataset", []).append(key)
 
             # Assign a consistent patient index across different samples
-            patient = x['patient']
+            patient = x["patient"]
             i = patient_lookup.setdefault((key, patient), len(patient_lookup))
-            data.setdefault('idx', []).append(i)
-            data.setdefault('patient', []).append(patient)
+            data.setdefault("idx", []).append(i)
+            data.setdefault("patient", []).append(patient)
 
             # Add the values
-            if x['value'] is None or x['value'] < dataset['loq']:
+            if x["value"] is None or x["value"] < dataset["loq"]:
                 value = loq_fill_value
                 num_negatives_by_patient[i] += 1
             else:
-                value = x['value']
+                value = x["value"]
                 num_positives_by_patient[i] += 1
-            data.setdefault('load', []).append(10 ** value)
-            data.setdefault('day', []).append(x.get('day', day_fill_value))
+            data.setdefault("load", []).append(10**value)
+            data.setdefault("day", []).append(x.get("day", day_fill_value))
 
             num_samples_by_patient[i] += 1
 
     # Convert to numpy arrays and add some additional contextual information
     num_patients = len(patient_lookup)
     data = {key: np.asarray(value) for key, value in data.items()}
-    data.update({
-        'num_samples': len(data['load']),
-        'num_patients': num_patients,
-        'num_samples_by_patient': dict_to_array(num_samples_by_patient,
-                                                size=num_patients, dtype=int),
-        'num_positives_by_patient': dict_to_array(num_positives_by_patient,
-                                                  size=num_patients, dtype=int),
-        'num_negatives_by_patient': dict_to_array(num_negatives_by_patient,
-                                                  size=num_patients, dtype=int),
-        'positive': data['load'] > data['loq'],
-        'loadln': np.log(data['load']),
-        'loqln': np.log(data['loq']),
-    })
+    data.update(
+        {
+            "num_samples": len(data["load"]),
+            "num_patients": num_patients,
+            "num_samples_by_patient": dict_to_array(
+                num_samples_by_patient, size=num_patients, dtype=int
+            ),
+            "num_positives_by_patient": dict_to_array(
+                num_positives_by_patient, size=num_patients, dtype=int
+            ),
+            "num_negatives_by_patient": dict_to_array(
+                num_negatives_by_patient, size=num_patients, dtype=int
+            ),
+            "positive": data["load"] > data["loq"],
+            "loadln": np.log(data["load"]),
+            "loqln": np.log(data["loq"]),
+        }
+    )
 
     return data

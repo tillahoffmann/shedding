@@ -17,7 +17,7 @@ def skip_doctest(obj):
     """
     Decorator to skip doctests.
     """
-    if 'doctest' in sys.argv:
+    if "doctest" in sys.argv:
         obj.__doc__ = "Skipping doctest."
     return obj
 
@@ -50,7 +50,7 @@ def dict_to_array(mapping, size=None, fill_value=0, dtype=None):
     return x
 
 
-def extract_kvps(x, pattern='(.*?)_rep$'):
+def extract_kvps(x, pattern="(.*?)_rep$"):
     """
     Extract key-value pairs matching a pattern from a dictionary or list of dictionaries.
 
@@ -105,21 +105,23 @@ def qq_plot(y, dist, yerr=None, ax=None, **kwargs):
         Keyword arguments passed to `ax.errorbar`.
     """
     ax = ax or plt.gca()
-    kwargs.setdefault('ls', 'none')
-    kwargs.setdefault('marker', mpl.rcParams['scatter.marker'])
+    kwargs.setdefault("ls", "none")
+    kwargs.setdefault("marker", mpl.rcParams["scatter.marker"])
     y = np.sort(y)
     # Generate empirical quantiles (using 0.5 offset to avoid infs)
     empirical = (0.5 + np.arange(len(y))) / len(y)
     x = dist.ppf(empirical)
     # Plot the empirical values against the corresponding theoretical ones
     errorbar = ax.errorbar(x, y, yerr, **kwargs)
-    ax.set_aspect('equal')
+    ax.set_aspect("equal")
     mm = x[0], x[-1]
-    ax.plot(mm, mm, color='k', ls=':')
+    ax.plot(mm, mm, color="k", ls=":")
     return errorbar
 
 
-def replication_percentile_plot(data, replicates, key=None, percentiles=10, ax=None, **kwargs):
+def replication_percentile_plot(
+    data, replicates, key=None, percentiles=10, ax=None, **kwargs
+):
     """
     Generate a violin plot of replicated percentiles against empirical percentiles.
 
@@ -149,13 +151,13 @@ def replication_percentile_plot(data, replicates, key=None, percentiles=10, ax=N
     x = np.percentile(data, percentiles, axis=0)
     y = np.asarray([np.percentile(x, percentiles) for x in replicates])
     mm = x.min(), x.max()
-    ax.plot(mm, mm, ls=':', color='k')
-    ax.set_aspect('equal')
+    ax.plot(mm, mm, ls=":", color="k")
+    ax.set_aspect("equal")
 
-    label = kwargs.pop('label', None)
+    label = kwargs.pop("label", None)
     violins = ax.violinplot(y, x, **kwargs)
     if label:
-        violins['cbars'].set_label(label)
+        violins["cbars"].set_label(label)
     return violins
 
 
@@ -187,7 +189,7 @@ def reload(module, predicate=None, exclude=None):
     for _, submodule in inspect.getmembers(module, inspect.ismodule):
         if predicate(submodule) and submodule not in exclude:
             reload(submodule, predicate, exclude)
-    print(f'reloading {module}...')
+    print(f"reloading {module}...")
     importlib.reload(module)
     exclude.append(module)
 
@@ -244,10 +246,10 @@ def plot_replication_summary(data, replicates_by_model, target=None, ax=None, **
     ax = ax or plt.gca()
     # Plot the reference
     reference = target(data)
-    ax.axvline(reference, color='k', ls=':')
+    ax.axvline(reference, color="k", ls=":")
 
     if not isinstance(replicates_by_model, dict):
-        replicates_by_model = {'default': replicates_by_model}
+        replicates_by_model = {"default": replicates_by_model}
 
     # Plot the replicates
     for key, replicates in replicates_by_model.items():
@@ -255,9 +257,9 @@ def plot_replication_summary(data, replicates_by_model, target=None, ax=None, **
         plot_kde(stats.gaussian_kde(x), ax=ax, label=key, **kwargs)
         pval = np.mean(x < reference)
         pval = min(pval, 1 - pval)
-        print(f'{key} posterior p-value: {pval:.3f}')
+        print(f"{key} posterior p-value: {pval:.3f}")
 
-    ax.axvline(reference, color='k', ls=':')
+    ax.axvline(reference, color="k", ls=":")
 
 
 def logmeanexp(x, axis=None, **kwargs):
@@ -287,13 +289,13 @@ def logmeanexp(x, axis=None, **kwargs):
     return lse - np.log(size)
 
 
-def label_axes(axes, x=0.05, y=0.95, va='top', offset=0, **kwargs):
+def label_axes(axes, x=0.05, y=0.95, va="top", offset=0, **kwargs):
     """
     Attach alphabetical labels to a sequence of axes.
     """
     for i, ax in enumerate(np.ravel(axes)):
-        char = bytes([int.from_bytes(b'a', 'little') + i + offset]).decode()
-        ax.text(x, y, '(%s)' % char, va=va, transform=ax.transAxes, **kwargs)
+        char = bytes([int.from_bytes(b"a", "little") + i + offset]).decode()
+        ax.text(x, y, "(%s)" % char, va=va, transform=ax.transAxes, **kwargs)
 
 
 def broadcast_shapes(*shapes):
@@ -315,14 +317,17 @@ def broadcast_shapes(*shapes):
     >>> broadcast_shapes((2, 1), (1, 3))
     (2, 3)
     """
-    shapes = [shape if isinstance(shape, tuple) else (shape,) for shape in shapes
-              if shape is not None]
+    shapes = [
+        shape if isinstance(shape, tuple) else (shape,)
+        for shape in shapes
+        if shape is not None
+    ]
     maxdim = max(map(len, shapes))
     broadcast_shape = []
     for i, sizes in enumerate(it.zip_longest(*map(reversed, shapes), fillvalue=1)):
         sizes = set(sizes) | {1}
         if len(sizes) > 2:
-            raise ValueError(f'unmatched dimensions at dimension {maxdim - i}')
+            raise ValueError(f"unmatched dimensions at dimension {maxdim - i}")
         broadcast_shape.append(max(sizes))
     return tuple(reversed(broadcast_shape))
 
@@ -331,6 +336,7 @@ def flush_traceback(func):
     """
     Decorator to flush the traceback of an exception before the kernel dies.
     """
+
     @ft.wraps(func)
     def _flush_traceback_wrapper(*args, **kwargs):
         try:
@@ -340,4 +346,5 @@ def flush_traceback(func):
             sys.stderr.flush()
             sys.stdout.flush()
             raise
+
     return _flush_traceback_wrapper

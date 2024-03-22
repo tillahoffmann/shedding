@@ -4,7 +4,7 @@ from numpy import get_include
 
 
 setup(
-    ext_modules=cythonize('shedding/_util.pyx', language_level=3),
+    ext_modules=cythonize("shedding/_util.pyx", language_level=3),
     include_dirs=[
         get_include(),
     ],

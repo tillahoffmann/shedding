@@ -19,41 +19,44 @@ import sphinx
 
 
 def _parse_key(argument):
-    return argument.split('/')
+    return argument.split("/")
 
 
 class JinjaDirective(Directive):
     """
     Custom directive for using Jinja templates in reStructuredText.
     """
+
     has_content = True
     optional_arguments = 1
     option_spec = {
-        'file': directives.path,
-        'header_char': directives.unchanged,
-        'debug': directives.flag,
-        'key': _parse_key,
+        "file": directives.path,
+        "header_char": directives.unchanged,
+        "debug": directives.flag,
+        "key": _parse_key,
     }
 
     def run(self):
         # Load the template
-        template_filename = self.options.get('file')
+        template_filename = self.options.get("file")
         if template_filename:
             with open(template_filename) as fp:
                 template = fp.read()
         else:
-            template = '\n'.join(self.content)
+            template = "\n".join(self.content)
 
         # Render the template
         context = self.app.config.jinja_context
-        keys = self.options.get('key', [])
+        keys = self.options.get("key", [])
         for key in keys:
             context = context[key]
-        context['_jinja_key'] = keys
+        context["_jinja_key"] = keys
         template = Template(template)
-        rst = template.render(**context, header_char=self.options.get('header_char', '='))
+        rst = template.render(
+            **context, header_char=self.options.get("header_char", "=")
+        )
 
-        if 'debug' in self.options:
+        if "debug" in self.options:
             print(rst)
 
         # Parse the generated rst
@@ -65,18 +68,18 @@ class JinjaDirective(Directive):
 
 def setup(app):
     JinjaDirective.app = app
-    app.add_directive('jinja', JinjaDirective)
-    app.add_config_value('jinja_context', {}, 'env')
-    return {'parallel_read_safe': True, 'parallel_write_safe': True}
+    app.add_directive("jinja", JinjaDirective)
+    app.add_config_value("jinja_context", {}, "env")
+    return {"parallel_read_safe": True, "parallel_write_safe": True}
 
 
 # -- Datasets for jinja templates --------------------------------------------
-filenames = glob('publications/*/*.json')
+filenames = glob("publications/*/*.json")
 jinja_context = {}
 for filename in sorted(filenames):
     with open(filename) as fp:
         key, _ = os.path.splitext(os.path.basename(filename))
-        jinja_context.setdefault('publications', {})[key] = json.load(fp)
+        jinja_context.setdefault("publications", {})[key] = json.load(fp)
 
 # Get all modules for the documentation
 modules = set()
@@ -84,10 +87,10 @@ queue = [shedding]
 while queue:
     module = queue.pop(0)
     for _, module in inspect.getmembers(module):
-        if inspect.ismodule(module) and module.__name__.startswith('shedding'):
+        if inspect.ismodule(module) and module.__name__.startswith("shedding"):
             queue.append(module)
             modules.add(module.__name__)
-jinja_context['modules'] = list(sorted(modules))
+jinja_context["modules"] = list(sorted(modules))
 
 # -- Path setup --------------------------------------------------------------
 
@@ -102,9 +105,9 @@ jinja_context['modules'] = list(sorted(modules))
 
 # -- Project information -----------------------------------------------------
 
-project = 'shedding'
-copyright = '2020, Till Hoffmann'
-author = 'Till Hoffmann'
+project = "shedding"
+copyright = "2020, Till Hoffmann"
+author = "Till Hoffmann"
 
 
 # -- General configuration ---------------------------------------------------
@@ -113,21 +116,21 @@ author = 'Till Hoffmann'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'linuxdoc.rstFlatTable',  # For fancy tables
-    'matplotlib.sphinxext.plot_directive',  # For plots
-    'sphinx.ext.autodoc',  # To generate documentation
-    'sphinx.ext.napoleon',  # For docstring parsing
-    'sphinx.ext.doctest',  # For testing in docstrings
+    "linuxdoc.rstFlatTable",  # For fancy tables
+    "matplotlib.sphinxext.plot_directive",  # For plots
+    "sphinx.ext.autodoc",  # To generate documentation
+    "sphinx.ext.napoleon",  # For docstring parsing
+    "sphinx.ext.doctest",  # For testing in docstrings
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = [
-    'PolyChordLite',
+    "PolyChordLite",
 ]
 
 # -- Options for HTML output -------------------------------------------------
@@ -135,7 +138,7 @@ exclude_patterns = [
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'nature'
+html_theme = "nature"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -145,7 +148,7 @@ html_static_path = []
 # -- Options for matplotlib --------------------------------------------------
 
 plot_formats = [
-    ('png', 144),
+    ("png", 144),
 ]
 
-doctest_global_setup = 'from shedding import *'
+doctest_global_setup = "from shedding import *"

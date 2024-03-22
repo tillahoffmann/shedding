@@ -5,9 +5,11 @@ import inspect
 import numpy as np
 from scipy import integrate, special
 from .util import flush_traceback, logmeanexp
+
 # Importing _util breaks the readthedocs build. Omit if when we're building the documentation.
 import os
-if not os.environ.get('READTHEDOCS'):  # pragma: no cover
+
+if not os.environ.get("READTHEDOCS"):  # pragma: no cover
     from ._util import gengamma_lpdf, gengamma_lcdf, gengamma_loc
 
 
@@ -15,10 +17,11 @@ def broadcast_samples(func):
     """
     Decorator to broadcast the function across samples provided as the first argument.
     """
+
     @ft.wraps(func)
     def _broadcast_samples_wrapper(*args, **kwargs):
         # Use different behaviour for instance methods to account for `self`
-        if 'self' in inspect.signature(func).parameters:
+        if "self" in inspect.signature(func).parameters:
             self, x, *args = args
             partial = ft.partial(func, self)
         else:
@@ -79,7 +82,7 @@ def values_to_vector(parameters, values, size=None):
         if vector is None:
             base_shape = np.shape(value)
             if shape:
-                base_shape = base_shape[:-len(shape)]
+                base_shape = base_shape[: -len(shape)]
             vector = np.empty(base_shape + (size,))
         if not shape:
             vector[..., offset] = value
@@ -87,7 +90,7 @@ def values_to_vector(parameters, values, size=None):
             continue
         if len(shape) > 1:
             value = np.reshape(value, base_shape + (-1,))
-        vector[..., offset:offset + value.shape[-1]] = value
+        vector[..., offset : offset + value.shape[-1]] = value
         offset += value.shape[-1]
     return vector
 
@@ -119,7 +122,7 @@ def vector_to_values(parameters, vector):
         size = 1
         for dim in shape:
             size *= dim
-        value = vector[..., offset:offset + size]
+        value = vector[..., offset : offset + size]
         if len(shape) > 1:
             value = np.reshape(value, base_shape + shape)
         values[key] = value
@@ -169,13 +172,13 @@ def write_paramnames_file(parameters, filename, escape=True):
     """
     Write parameter names to a file.
     """
-    with open(filename, 'w') as fp:
+    with open(filename, "w") as fp:
         for parameter, shape in parameters.items():
             ndims = len(shape)
             if escape:
-                parameter = parameter.replace('_', '\\_')
+                parameter = parameter.replace("_", "\\_")
             if ndims == 0:
-                fp.write(f'{parameter}\n')
+                fp.write(f"{parameter}\n")
             else:
                 indices = np.indices(shape).reshape((ndims, -1)).T
                 for index in indices:
@@ -230,11 +233,16 @@ def _gengamma_lpdf(q, mu, sigma, logx, qmin=1e-6):
     z = (logx - mu) / sigma
     qz = q * z
     # Evaluate the generalised gamma lpdf
-    lpdf1 = logc - special.gammaln(a) + a * np.log(a) + (a * c - 1) * logx - \
-        a * (mu * c + np.exp(qz))
+    lpdf1 = (
+        logc
+        - special.gammaln(a)
+        + a * np.log(a)
+        + (a * c - 1) * logx
+        - a * (mu * c + np.exp(qz))
+    )
     # Evaluate for small q close to the lognormal limit
     s = np.where(qz > qmin, np.expm1(qz) / q, z + qz * z / 2)
-    lpdf2 = - _LN_PDF_CONSTANT - np.log(sigma) - s * s / 2 + qz - logx
+    lpdf2 = -_LN_PDF_CONSTANT - np.log(sigma) - s * s / 2 + qz - logx
     return np.where(q > qmin, lpdf1, lpdf2)
 
 
@@ -256,7 +264,7 @@ def gengamma_mean(q, mu, sigma, qmin=1e-6):
     """
     Evaluate the mean of the generalised gamma distribution.
     """
-    a = 1 / q ** 2
+    a = 1 / q**2
     cinv = sigma / q
     sigma2 = np.square(sigma)
     summand1 = special.gammaln(a + cinv) - special.gammaln(a) - np.log(a) * cinv
@@ -271,7 +279,7 @@ def _gengamma_loc(q, sigma, mean, qmin=1e-6):
     """
     Evaluate the scale of the generalised gamma distribution for given shape, exponent, and mean.
     """
-    a = 1 / q ** 2
+    a = 1 / q**2
     cinv = sigma / q
     sigma2 = np.square(sigma)
     summand1 = special.gammaln(a + cinv) - special.gammaln(a) - np.log(a) * cinv
@@ -313,9 +321,9 @@ class HalfCauchyPrior(PositivePrior):
         return scale * np.tan(np.pi * uniform / 2)
 
     def lpdf(self, x):
-        scale = self.kwargs['scale']
+        scale = self.kwargs["scale"]
         z = x / scale
-        return np.log(2 / (scale * np.pi)) - np.log1p(z ** 2)
+        return np.log(2 / (scale * np.pi)) - np.log1p(z**2)
 
 
 class CauchyPrior(Prior):
@@ -324,10 +332,10 @@ class CauchyPrior(Prior):
         return loc + scale * np.tan(np.pi * (uniform - 0.5))
 
     def lpdf(self, x):
-        scale = self.kwargs['scale']
-        loc = self.kwargs['loc']
+        scale = self.kwargs["scale"]
+        loc = self.kwargs["loc"]
         z = (x - loc) / scale
-        return -np.log(np.pi * scale) - np.log1p(z ** 2)
+        return -np.log(np.pi * scale) - np.log1p(z**2)
 
 
 class NormalPrior(Prior):
@@ -376,8 +384,8 @@ class LoguniformPrior(UniformPrior):
     def __init__(self, lower, upper, base=None):
         base = base or np.e
         super(UniformPrior, self).__init__(lower=lower, upper=upper, base=base)
-        self.lower = base ** lower
-        self.upper = base ** upper
+        self.lower = base**lower
+        self.upper = base**upper
 
     @classmethod
     def from_uniform(cls, uniform, lower, upper, base):
@@ -400,23 +408,23 @@ def to_abc(q, mu, sigma):
     Transform from Stacey's parametrisation to the parametrisation in terms of shape, scale, and
     exponent.
     """
-    a = 1 / q ** 2
+    a = 1 / q**2
     c = q / sigma
-    b = None if mu is None else a * np.exp(- mu * c)
+    b = None if mu is None else a * np.exp(-mu * c)
     return a, b, c
 
 
 class Parametrisation(enum.Enum):
-    GENERAL = 'general'
-    GAMMA = 'gamma'
-    WEIBULL = 'weibull'
-    LOGNORMAL = 'lognormal'
+    GENERAL = "general"
+    GAMMA = "gamma"
+    WEIBULL = "weibull"
+    LOGNORMAL = "lognormal"
 
 
 class Profile(enum.Enum):
-    EXPONENTIAL = 'exponential'
-    GAMMA = 'gamma'
-    TEUNIS = 'teunis'
+    EXPONENTIAL = "exponential"
+    GAMMA = "gamma"
+    TEUNIS = "teunis"
     CONSTANT = False
 
     def evaluate_offset(self, day, values):
@@ -432,13 +440,18 @@ class Profile(enum.Enum):
         if self == Profile.CONSTANT:
             return 0
         if self == Profile.EXPONENTIAL:
-            return values['slope'] * day
-        delta = day - values['profile_offset']
+            return values["slope"] * day
+        delta = day - values["profile_offset"]
         if self == Profile.GAMMA:
-            profile = values['profile_shape'] * np.log(delta) - values['profile_scale'] * delta
+            profile = (
+                values["profile_shape"] * np.log(delta)
+                - values["profile_scale"] * delta
+            )
         elif self == Profile.TEUNIS:
-            profile = np.log1p(-np.exp(-values['profile_rise'] * delta)) - \
-                values['profile_decay'] * delta
+            profile = (
+                np.log1p(-np.exp(-values["profile_rise"] * delta))
+                - values["profile_decay"] * delta
+            )
         else:
             raise ValueError(self)
         return np.where(delta > 0, profile, -np.inf)
@@ -456,8 +469,9 @@ class SimulationMode(enum.Enum):
     The `NEW_PATIENTS` replication mode can be used to simulate data given hyperparameters at the
     population level.
     """
-    NEW_PATIENTS = 'new_patients'
-    EXISTING_PATIENTS = 'existing_patients'
+
+    NEW_PATIENTS = "new_patients"
+    EXISTING_PATIENTS = "existing_patients"
 
 
 class Transformation:
@@ -470,6 +484,7 @@ class Transformation:
 
        \log P(y) = \log P(x=f^{-1}(y)) + \log \frac{dx}{dy}.
     """
+
     def __call__(self, values):
         """
         Transform from the transformed space to the regular space.
@@ -491,30 +506,39 @@ class Transformation:
 
 
 class DefaultTransformation:
-    POSITIVE_KEYS = ['patient_mean', 'patient_shape', 'patient_scale',
-                     'population_shape', 'population_scale']
+    POSITIVE_KEYS = [
+        "patient_mean",
+        "patient_shape",
+        "patient_scale",
+        "population_shape",
+        "population_scale",
+    ]
 
     def __call__(self, values):
         result = dict(values)
-        result.update({key: np.exp(values[key]) for key in self.POSITIVE_KEYS if key in values})
+        result.update(
+            {key: np.exp(values[key]) for key in self.POSITIVE_KEYS if key in values}
+        )
         # Transform to the unit interval if required
-        logit = values.get('rho')
+        logit = values.get("rho")
         if logit is not None:
-            result['rho'] = special.expit(logit)
+            result["rho"] = special.expit(logit)
         return result
 
     def inverse(self, values):
         result = dict(values)
-        result.update({key: np.log(values[key]) for key in self.POSITIVE_KEYS if key in values})
-        rho = values.get('rho')
+        result.update(
+            {key: np.log(values[key]) for key in self.POSITIVE_KEYS if key in values}
+        )
+        rho = values.get("rho")
         if rho is not None:
-            result['rho'] = special.logit(rho)
+            result["rho"] = special.logit(rho)
         return result
 
     def jacobianlogdet(self, values):
         logdet = sum(values[key].sum() for key in self.POSITIVE_KEYS if key in values)
         # Account for logit transform if required
-        logit = values.get('rho')
+        logit = values.get("rho")
         if logit is not None:
             logdet += logit - 2 * np.log1p(np.exp(logit))
         return logdet
@@ -525,28 +549,36 @@ def _augment_values(func):
     Decorator to augment the values by adding the population and patient shapes based on the
     parametrisation.
     """
+
     @ft.wraps(func)
     def _augment_wrapper(self, values, *args, **kwargs):
         if self.parametrisation == Parametrisation.GENERAL:
             pass
         elif self.parametrisation == Parametrisation.LOGNORMAL:
-            values.update({
-                'population_shape': np.float64(0),
-                'patient_shape': np.float64(0),
-            })
+            values.update(
+                {
+                    "population_shape": np.float64(0),
+                    "patient_shape": np.float64(0),
+                }
+            )
         elif self.parametrisation == Parametrisation.WEIBULL:
-            values.update({
-                'population_shape': 1,
-                'patient_shape': 1,
-            })
+            values.update(
+                {
+                    "population_shape": 1,
+                    "patient_shape": 1,
+                }
+            )
         elif self.parametrisation == Parametrisation.GAMMA:
-            values.update({
-                    'population_shape': values['population_scale'],
-                    'patient_shape': values['patient_scale'],
-                })
+            values.update(
+                {
+                    "population_shape": values["population_scale"],
+                    "patient_shape": values["patient_scale"],
+                }
+            )
         else:
             raise ValueError
         return func(self, values, *args, **kwargs)
+
     return _augment_wrapper
 
 
@@ -584,68 +616,83 @@ class Model:
     The model can be restricted to a particular distribution using the :code:`parametrisation`
     parameter.
     """
-    def __init__(self, num_patients, parametrisation='general', inflated=False, temporal=False,
-                 priors=None):
+
+    def __init__(
+        self,
+        num_patients,
+        parametrisation="general",
+        inflated=False,
+        temporal=False,
+        priors=None,
+    ):
         self.num_patients = num_patients
         self.parametrisation = Parametrisation(parametrisation)
         self.inflated = inflated
         self.temporal = Profile(temporal)
         # Using Stacey's parametrisation
         self.parameters = {
-            'population_loc': (),
-            'population_scale': (),
-            'patient_scale': (),
-            'patient_mean': (num_patients,)
+            "population_loc": (),
+            "population_scale": (),
+            "patient_scale": (),
+            "patient_mean": (num_patients,),
         }
         if self.parametrisation == Parametrisation.GENERAL:
-            self.parameters.update({
-                'population_shape': (),
-                'patient_shape': (),
-            })
+            self.parameters.update(
+                {
+                    "population_shape": (),
+                    "patient_shape": (),
+                }
+            )
         if self.inflated:
-            self.parameters['rho'] = ()
+            self.parameters["rho"] = ()
         if self.temporal == Profile.GAMMA:
             # Parameters for the gamma distribution. Shape and scale as usual. Offset is just an
             # overall shift.
-            self.parameters.update({
-                'profile_offset': (),
-                'profile_shape': (),
-                'profile_scale': (),
-            })
+            self.parameters.update(
+                {
+                    "profile_offset": (),
+                    "profile_shape": (),
+                    "profile_scale": (),
+                }
+            )
         elif self.temporal == Profile.EXPONENTIAL:
-            self.parameters['slope'] = ()
+            self.parameters["slope"] = ()
         elif self.temporal == Profile.TEUNIS:
-            self.parameters.update({
-                'profile_offset': (),
-                'profile_rise': (),
-                'profile_decay': (),
-            })
+            self.parameters.update(
+                {
+                    "profile_offset": (),
+                    "profile_rise": (),
+                    "profile_decay": (),
+                }
+            )
         self.size = evaluate_size(self.parameters)
 
         # Merge the supplied priors and default priors
         self.priors = priors or {}
         default_priors = {
-                'population_scale': HalfCauchyPrior(scale=1),
-                'patient_scale': HalfCauchyPrior(scale=1),
-                'population_loc': UniformPrior(6, 23)
-            }
+            "population_scale": HalfCauchyPrior(scale=1),
+            "patient_scale": HalfCauchyPrior(scale=1),
+            "population_loc": UniformPrior(6, 23),
+        }
         if self.parametrisation == Parametrisation.GENERAL:
-            default_priors.update({
-                'population_shape': HalfCauchyPrior(scale=1),
-                'patient_shape': HalfCauchyPrior(scale=1),
-            })
+            default_priors.update(
+                {
+                    "population_shape": HalfCauchyPrior(scale=1),
+                    "patient_shape": HalfCauchyPrior(scale=1),
+                }
+            )
         if self.inflated:
-            default_priors['rho'] = UniformPrior(0, 1)
+            default_priors["rho"] = UniformPrior(0, 1)
         if self.temporal == Profile.GAMMA:
-            default_priors['profile_offset'] = UniformPrior(-14, 7)
-            default_priors['profile_shape'] = HalfCauchyPrior(scale=1)
-            default_priors['profile_scale'] = HalfCauchyPrior(scale=1)
+            default_priors["profile_offset"] = UniformPrior(-14, 7)
+            default_priors["profile_shape"] = HalfCauchyPrior(scale=1)
+            default_priors["profile_scale"] = HalfCauchyPrior(scale=1)
         elif self.temporal == Profile.EXPONENTIAL:
-            default_priors['slope'] = CauchyPrior(loc=0, scale=1)
+            default_priors["slope"] = CauchyPrior(loc=0, scale=1)
         elif self.temporal == Profile.TEUNIS:
-            default_priors['profile_offset'] = UniformPrior(-14, 7)
-            default_priors['profile_rise'] = HalfCauchyPrior(scale=1)
-            default_priors['profile_decay'] = HalfCauchyPrior(scale=1)
+            default_priors["profile_offset"] = UniformPrior(-14, 7)
+            default_priors["profile_rise"] = HalfCauchyPrior(scale=1)
+            default_priors["profile_decay"] = HalfCauchyPrior(scale=1)
         for key, prior in default_priors.items():
             self.priors.setdefault(key, prior)
 
@@ -653,8 +700,13 @@ class Model:
         """
         Sample parameters that are shared amongst individuals.
         """
-        values.update({key: self.priors[key](value) for key, value in values.items()
-                       if key != 'patient_mean'})
+        values.update(
+            {
+                key: self.priors[key](value)
+                for key, value in values.items()
+                if key != "patient_mean"
+            }
+        )
         return values
 
     @_augment_values
@@ -663,9 +715,12 @@ class Model:
         Sample individual-level parameters.
         """
         # Use from_uniform directly to avoid overhead of instance creation
-        values['patient_mean'] = GengammaPrior.from_uniform(
-            values['patient_mean'], values['population_shape'], values['population_loc'],
-            values['population_scale'])
+        values["patient_mean"] = GengammaPrior.from_uniform(
+            values["patient_mean"],
+            values["population_shape"],
+            values["population_loc"],
+            values["population_scale"],
+        )
         return values
 
     def sample_params(self, values):
@@ -696,20 +751,23 @@ class Model:
         lxdf : np.ndarray[..., num_samples]
             Log likelihood contributions for each sample.
         """
-        q = values['patient_shape']
-        sigma = values['patient_scale']
-        mu = gengamma_loc(q, sigma, values['patient_mean'])
+        q = values["patient_shape"]
+        sigma = values["patient_scale"]
+        mu = gengamma_loc(q, sigma, values["patient_mean"])
         if i is None:
-            mu = np.repeat(mu, data['num_samples_by_patient'], axis=-1) + \
-                self.temporal.evaluate_offset(data['day'], values)
-            lxdf = gengamma_lpdf(q, mu, sigma, data['loadln'], where=data['positive'])
-            gengamma_lcdf(q, mu, sigma, data['loqln'], out=lxdf, where=~data['positive'])
+            mu = np.repeat(
+                mu, data["num_samples_by_patient"], axis=-1
+            ) + self.temporal.evaluate_offset(data["day"], values)
+            lxdf = gengamma_lpdf(q, mu, sigma, data["loadln"], where=data["positive"])
+            gengamma_lcdf(
+                q, mu, sigma, data["loqln"], out=lxdf, where=~data["positive"]
+            )
         else:
-            mu = mu + self.temporal.evaluate_offset(data['day'][i], values)
-            if data['positive'][i]:
-                lxdf = gengamma_lpdf(q, mu, sigma, data['loadln'][i])
+            mu = mu + self.temporal.evaluate_offset(data["day"][i], values)
+            if data["positive"][i]:
+                lxdf = gengamma_lpdf(q, mu, sigma, data["loadln"][i])
             else:
-                lxdf = gengamma_lcdf(q, mu, sigma, data['loqln'][i])
+                lxdf = gengamma_lcdf(q, mu, sigma, data["loqln"][i])
         return lxdf
 
     @_augment_values
@@ -719,7 +777,7 @@ class Model:
         that all patients shed virus.
         """
         result = self._evaluate_sample_log_likelihood(values, data)
-        return np.bincount(data['idx'], result, minlength=data['num_patients'])
+        return np.bincount(data["idx"], result, minlength=data["num_patients"])
 
     @_augment_values
     def evaluate_log_likelihood(self, values, data):
@@ -729,15 +787,22 @@ class Model:
         if not self.inflated:
             return self._evaluate_sample_log_likelihood(values, data).sum()
 
-        patient_contrib = self._evaluate_patient_log_likelihood(values, data) + \
-            np.log(values['rho'])
-        np.logaddexp(patient_contrib, np.log1p(-values['rho']), out=patient_contrib,
-                     where=data['num_positives_by_patient'] == 0)
+        patient_contrib = self._evaluate_patient_log_likelihood(values, data) + np.log(
+            values["rho"]
+        )
+        np.logaddexp(
+            patient_contrib,
+            np.log1p(-values["rho"]),
+            out=patient_contrib,
+            where=data["num_positives_by_patient"] == 0,
+        )
         return patient_contrib.sum()
 
     @broadcast_samples
     @_augment_values
-    def evaluate_marginal_log_likelihood(self, values, data, n=1000, eps=1e-6, **kwargs):
+    def evaluate_marginal_log_likelihood(
+        self, values, data, n=1000, eps=1e-6, **kwargs
+    ):
         """
         Evaluate the log likelihood of the observed data marginalised with respect to group-level
         parameters but conditional on hyperparameters.
@@ -762,35 +827,51 @@ class Model:
         if isinstance(n, int):
             values = dict(values)
             # Sample the patient means
-            uniform = np.random.uniform(size=(n, data['num_patients']))
-            values['patient_mean'] = np.maximum(GengammaPrior.from_uniform(
-                uniform, values['population_shape'], values['population_loc'],
-                values['population_scale']), eps)
+            uniform = np.random.uniform(size=(n, data["num_patients"]))
+            values["patient_mean"] = np.maximum(
+                GengammaPrior.from_uniform(
+                    uniform,
+                    values["population_shape"],
+                    values["population_loc"],
+                    values["population_scale"],
+                ),
+                eps,
+            )
             # Evaluate the sample log likelihood and marginalise with respect to the patient-level
             # attributes
             sample_likelihood = self._evaluate_sample_log_likelihood(values, data)
             sample_likelihood = logmeanexp(sample_likelihood, axis=0)
 
             # Aggregate by patient
-            patient_likelihood = np.bincount(data['idx'], sample_likelihood,
-                                             minlength=data['num_patients'])
+            patient_likelihood = np.bincount(
+                data["idx"], sample_likelihood, minlength=data["num_patients"]
+            )
         elif n == "scipy":
+
             def _func(x, patient):
                 """
                 Evaluate the marginal likelihood of a patient.
                 """
                 # Copy the posterior parameters and update with the value of interest.
-                patient_mean = np.maximum(GengammaPrior.from_uniform(
-                    x, values['population_shape'], values['population_loc'],
-                    values['population_scale']), eps)
+                patient_mean = np.maximum(
+                    GengammaPrior.from_uniform(
+                        x,
+                        values["population_shape"],
+                        values["population_loc"],
+                        values["population_scale"],
+                    ),
+                    eps,
+                )
                 _values = dict(values)
                 _values["patient_mean"] = patient_mean
-                return np.exp(sum(
-                    self._evaluate_sample_log_likelihood(_values, data, i=i) for i in
-                    np.where(data["idx"] == patient)[0]
-                ))
+                return np.exp(
+                    sum(
+                        self._evaluate_sample_log_likelihood(_values, data, i=i)
+                        for i in np.where(data["idx"] == patient)[0]
+                    )
+                )
 
-            patient_likelihood = np.nan * np.empty(data['num_patients'])
+            patient_likelihood = np.nan * np.empty(data["num_patients"])
             for patient in range(patient_likelihood.size):
                 y, *_ = integrate.quad(_func, 0, 1, (patient,))
                 patient_likelihood[patient] = np.log(y)
@@ -803,11 +884,13 @@ class Model:
         # Patients that have all-negative samples may be non-shedders. So the data are either
         # generated by having some latent indicator z==0 or z==1 but the samples are too small to be
         # above the LOQ. So we need to evaluate the mixture distribution.
-        all_negative = data['num_positives_by_patient'] == 0
+        all_negative = data["num_positives_by_patient"] == 0
         patient_likelihood = np.where(
             all_negative,
-            np.logaddexp(patient_likelihood + np.log(values['rho']), np.log1p(-values['rho'])),
-            patient_likelihood
+            np.logaddexp(
+                patient_likelihood + np.log(values["rho"]), np.log1p(-values["rho"])
+            ),
+            patient_likelihood,
         )
         return patient_likelihood
 
@@ -832,18 +915,24 @@ class Model:
         # Sample the patient means
         uniform = np.random.uniform(size=size)
         patient_mean = GengammaPrior.from_uniform(
-            uniform, values['population_shape'], values['population_loc'],
-            values['population_scale'])
+            uniform,
+            values["population_shape"],
+            values["population_loc"],
+            values["population_scale"],
+        )
         # Evaluate the locations for the sample distribution
-        loc = gengamma_loc(values['patient_shape'], values['patient_scale'], patient_mean)
+        loc = gengamma_loc(
+            values["patient_shape"], values["patient_scale"], patient_mean
+        )
         # Sample the RNA loads
         uniform = np.random.uniform(size=size)
-        sample = GengammaPrior.from_uniform(uniform, values['patient_shape'], loc,
-                                            values['patient_scale'])
+        sample = GengammaPrior.from_uniform(
+            uniform, values["patient_shape"], loc, values["patient_scale"]
+        )
         if not self.inflated:
             return sample
         # Account for non-shedders
-        z = np.random.uniform(size=np.shape(sample)) < values['rho']
+        z = np.random.uniform(size=np.shape(sample)) < values["rho"]
         return np.where(z, sample, np.nan)
 
     @broadcast_samples
@@ -870,36 +959,38 @@ class Model:
         """
         data = data.copy()
         simulation_mode = SimulationMode(simulation_mode)
-        num_patients = data['num_patients']
+        num_patients = data["num_patients"]
         # Sample new individual-level attributes
         if simulation_mode == SimulationMode.NEW_PATIENTS:
-            values['patient_mean'] = np.random.uniform(size=num_patients)
+            values["patient_mean"] = np.random.uniform(size=num_patients)
             self.sample_individual_params(values)
         # Sample loads
-        loq = data['loq']
-        q = values['patient_shape']
-        sigma = values['patient_scale']
-        mu = gengamma_loc(q, sigma, values['patient_mean'])
-        mu = np.repeat(mu, data['num_samples_by_patient'])
+        loq = data["loq"]
+        q = values["patient_shape"]
+        sigma = values["patient_scale"]
+        mu = gengamma_loc(q, sigma, values["patient_mean"])
+        mu = np.repeat(mu, data["num_samples_by_patient"])
         # Account for the time dependence if available
-        mu += self.temporal.evaluate_offset(data['day'], values)
+        mu += self.temporal.evaluate_offset(data["day"], values)
         # Sample
         load = GengammaPrior.from_uniform(np.random.uniform(size=mu.size), q, mu, sigma)
 
         # Account for the patients who do not shed any RNA
         if self.inflated:
-            values['z'] = z = np.random.uniform(size=num_patients) < values['rho']
-            z = np.repeat(z, data['num_samples_by_patient'])
+            values["z"] = z = np.random.uniform(size=num_patients) < values["rho"]
+            z = np.repeat(z, data["num_samples_by_patient"])
             load = np.where(z, load, loq / 2)
-        data['load'] = load
-        data['loadln'] = np.log(load)
-        data['positive'] = positive = load >= loq
+        data["load"] = load
+        data["loadln"] = np.log(load)
+        data["positive"] = positive = load >= loq
 
         # Update summary statistics
-        data['num_positives_by_patient'] = np.bincount(data['idx'], positive,
-                                                       minlength=num_patients).astype(int)
-        data['num_negatives_by_patient'] = np.bincount(data['idx'], ~positive,
-                                                       minlength=num_patients).astype(int)
+        data["num_positives_by_patient"] = np.bincount(
+            data["idx"], positive, minlength=num_patients
+        ).astype(int)
+        data["num_negatives_by_patient"] = np.bincount(
+            data["idx"], ~positive, minlength=num_patients
+        ).astype(int)
         return data
 
     @broadcast_samples
@@ -920,13 +1011,16 @@ class Model:
         value : float
             Value of the desired statistic given parameter values.
         """
-        if self.inflated != ('rho' in values):
+        if self.inflated != ("rho" in values):
             raise ValueError  # pragma: no cover
-        if statistic == 'mean':
-            mean = gengamma_mean(values['population_shape'], values['population_loc'],
-                                 values['population_scale'])
+        if statistic == "mean":
+            mean = gengamma_mean(
+                values["population_shape"],
+                values["population_loc"],
+                values["population_scale"],
+            )
             if self.inflated:
-                mean *= values['rho']
+                mean *= values["rho"]
             return mean
         else:  # pragma: no cover
             raise ValueError(statistic)
@@ -936,11 +1030,15 @@ class Model:
         # Population and patient shape and scale as well as population loc
         result = sum(prior.lpdf(values[key]) for key, prior in self.priors.items())
         # Patient means
-        x = values.get('log_patient_mean')
+        x = values.get("log_patient_mean")
         if x is None:
-            x = np.log(values['patient_mean'])
-        result += gengamma_lpdf(values['population_shape'], values['population_loc'],
-                                values['population_scale'], x).sum()
+            x = np.log(values["patient_mean"])
+        result += gengamma_lpdf(
+            values["population_shape"],
+            values["population_loc"],
+            values["population_scale"],
+            x,
+        ).sum()
         return result + self.evaluate_log_likelihood(values, data)
 
     @flush_traceback
@@ -955,5 +1053,5 @@ class Model:
         result = self.evaluate_log_likelihood(values, data)
         # Use a large negative number if the likelihood cannot be evaluated
         if not np.isfinite(result):
-            result = - np.finfo(float).max
+            result = -np.finfo(float).max
         return result, []

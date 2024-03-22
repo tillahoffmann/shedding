@@ -5,22 +5,19 @@ import pytest
 
 def test_extract_kvps_list():
     x = [
-        {'a_': 1, 'b': 2},
-        {'a': 7, 'c_': 4},
+        {"a_": 1, "b": 2},
+        {"a": 7, "c_": 4},
     ]
-    y = shedding.extract_kvps(x, '(.*?)_')
+    y = shedding.extract_kvps(x, "(.*?)_")
     assert y == [
-        {'a': 1},
-        {'c': 4},
+        {"a": 1},
+        {"c": 4},
     ]
 
 
-@pytest.mark.parametrize('shape, axis', [
-    ((3, 4), None),
-    ((3, 4), 0),
-    ((5, 7), 1),
-    ((3, 4, 5), (1, 2))
-])
+@pytest.mark.parametrize(
+    "shape, axis", [((3, 4), None), ((3, 4), 0), ((5, 7), 1), ((3, 4, 5), (1, 2))]
+)
 def test_logmeanexp(shape, axis):
     x = np.random.normal(0, 1, shape)
     actual = shedding.logmeanexp(x, axis)
@@ -28,9 +25,12 @@ def test_logmeanexp(shape, axis):
     np.testing.assert_allclose(actual, desired)
 
 
-@pytest.mark.parametrize('shapes, desired', [
-    ([(3, 4), (5, 3, 1)], (5, 3, 4)),
-    ([(4, 1), 7], (4, 7)),
-])
+@pytest.mark.parametrize(
+    "shapes, desired",
+    [
+        ([(3, 4), (5, 3, 1)], (5, 3, 4)),
+        ([(4, 1), 7], (4, 7)),
+    ],
+)
 def test_broadcast_shapes(shapes, desired):
     assert shedding.broadcast_shapes(*shapes) == desired
