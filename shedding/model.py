@@ -6,7 +6,8 @@ import numpy as np
 from scipy import integrate, special
 from .util import flush_traceback, logmeanexp
 
-# Importing _util breaks the readthedocs build. Omit if when we're building the documentation.
+# Importing _util breaks the readthedocs build. Omit if when we're building the
+# documentation.
 import os
 
 if not os.environ.get("READTHEDOCS"):  # pragma: no cover
@@ -132,7 +133,8 @@ def vector_to_values(parameters, vector):
 
 def transpose_samples(samples, parameters=None):
     """
-    Transpose samples from a list of dictionaries to a dictionary of lists and vice versa.
+    Transpose samples from a list of dictionaries to a dictionary of lists and vice
+    versa.
 
     Parameters
     ----------
@@ -277,7 +279,8 @@ def gengamma_mean(q, mu, sigma, qmin=1e-6):
 
 def _gengamma_loc(q, sigma, mean, qmin=1e-6):
     """
-    Evaluate the scale of the generalised gamma distribution for given shape, exponent, and mean.
+    Evaluate the scale of the generalised gamma distribution for given shape, exponent,
+    and mean.
     """
     a = 1 / q**2
     cinv = sigma / q
@@ -394,8 +397,8 @@ class LoguniformPrior(UniformPrior):
 
 def from_abc(a, b, c):
     """
-    Transform from the parametrisation in terms of shape, scale, and exponent to Stacey's
-    parametrisation.
+    Transform from the parametrisation in terms of shape, scale, and exponent to
+    Stacey's parametrisation.
     """
     q = 1 / np.sqrt(a)
     mu = np.log(a / b) / c
@@ -405,8 +408,8 @@ def from_abc(a, b, c):
 
 def to_abc(q, mu, sigma):
     """
-    Transform from Stacey's parametrisation to the parametrisation in terms of shape, scale, and
-    exponent.
+    Transform from Stacey's parametrisation to the parametrisation in terms of shape,
+    scale, and exponent.
     """
     a = 1 / q**2
     c = q / sigma
@@ -429,8 +432,8 @@ class Profile(enum.Enum):
 
     def evaluate_offset(self, day, values):
         """
-        Evaluate the offset from the population-level location parameter due to the shedding
-        profile.
+        Evaluate the offset from the population-level location parameter due to the
+        shedding profile.
 
         Parameters
         ----------
@@ -459,15 +462,15 @@ class Profile(enum.Enum):
 
 class SimulationMode(enum.Enum):
     """
-    Enum to indicate whether simulation should be for `EXISTING_PATIENTS` or `NEW_PATIENTS`. Given
-    posterior samples, the former can be used to assess the fit of the model to samples collected
-    from new, unknown patients, and the latter can be used to assess the fit to new samples
-    collected from existing patients.
+    Enum to indicate whether simulation should be for `EXISTING_PATIENTS` or
+    `NEW_PATIENTS`. Given posterior samples, the former can be used to assess the fit of
+    the model to samples collected from new, unknown patients, and the latter can be
+    used to assess the fit to new samples collected from existing patients.
 
     Notes
     -----
-    The `NEW_PATIENTS` replication mode can be used to simulate data given hyperparameters at the
-    population level.
+    The `NEW_PATIENTS` replication mode can be used to simulate data given
+    hyperparameters at the population level.
     """
 
     NEW_PATIENTS = "new_patients"
@@ -476,9 +479,9 @@ class SimulationMode(enum.Enum):
 
 class Transformation:
     r"""
-    A bijective transformation :math:`y = f(x)` for regular variables :math:`x` and transformed
-    variables :math:`y`. For sampling purposes, the transformation induces a volume compression or
-    expansion that needs to be accounted for, i.e.
+    A bijective transformation :math:`y = f(x)` for regular variables :math:`x` and
+    transformed variables :math:`y`. For sampling purposes, the transformation induces a
+    volume compression or expansion that needs to be accounted for, i.e.
 
     .. math::
 
@@ -499,8 +502,8 @@ class Transformation:
 
     def jacobianlogdet(self, values):
         """
-        Evaluate the logarithm of the Jacobian determinant to account for sampling in the
-        transformed space rather than the regular space.
+        Evaluate the logarithm of the Jacobian determinant to account for sampling in
+        the transformed space rather than the regular space.
         """
         raise NotImplementedError
 
@@ -546,8 +549,8 @@ class DefaultTransformation:
 
 def _augment_values(func):
     """
-    Decorator to augment the values by adding the population and patient shapes based on the
-    parametrisation.
+    Decorator to augment the values by adding the population and patient shapes based on
+    the parametrisation.
     """
 
     @ft.wraps(func)
@@ -593,7 +596,8 @@ class Model:
     parametrisation : Parametrisation
         Parametrisation used by the model (see notes for details).
     inflated : bool
-        Whether there is a "zero-inflated" subpopulation of patients who do not shed RNA.
+        Whether there is a "zero-inflated" subpopulation of patients who do not shed
+        RNA.
     temporal : str
         Whether to include a shedding profile in the fit.
     priors : dict
@@ -601,20 +605,21 @@ class Model:
 
     Notes
     -----
-    The generalised gamma distribution is a versatile distribution for positive continuous data. We
-    use the parametrisation considered by Stacey with shape parameter :math:`q`, location parameter
-    :math:`\mu`, and scale parameter :math:`\sigma`. Then if :math:`\gamma` follows a gamma
-    distribution with shape parameter :math:`a=1/q^2`, the random variable
+    The generalised gamma distribution is a versatile distribution for positive
+    continuous data. We use the parametrisation considered by Stacey with shape
+    parameter :math:`q`, location parameter :math:`\mu`, and scale parameter
+    :math:`\sigma`. Then if :math:`\gamma` follows a gamma distribution with shape
+    parameter :math:`a=1/q^2`, the random variable
 
     .. math ::
        x = \exp\left(\mu + \frac{\sigma}{q}\log\left(q^2\gamma\right)\right)
 
     follows a generalised gamma distribution.
 
-    The generalised gamma distribution includes the regular gamma distribution (:math:`\sigma=q`),
-    Weibull distribution (:math:`q=1`), and lognormal distribution (:math:`q=0`) as special cases.
-    The model can be restricted to a particular distribution using the :code:`parametrisation`
-    parameter.
+    The generalised gamma distribution includes the regular gamma distribution
+    (:math:`\sigma=q`), Weibull distribution (:math:`q=1`), and lognormal distribution
+    (:math:`q=0`) as special cases. The model can be restricted to a particular
+    distribution using the :code:`parametrisation` parameter.
     """
 
     def __init__(
@@ -646,8 +651,8 @@ class Model:
         if self.inflated:
             self.parameters["rho"] = ()
         if self.temporal == Profile.GAMMA:
-            # Parameters for the gamma distribution. Shape and scale as usual. Offset is just an
-            # overall shift.
+            # Parameters for the gamma distribution. Shape and scale as usual. Offset is
+            # just an overall shift.
             self.parameters.update(
                 {
                     "profile_offset": (),
@@ -734,8 +739,8 @@ class Model:
     @_augment_values
     def _evaluate_sample_log_likelihood(self, values, data, i: int = None):
         """
-        Evaluate the log likelihood for each sample conditional on all model parameters, assuming
-        that all patients shed virus.
+        Evaluate the log likelihood for each sample conditional on all model parameters,
+        assuming that all patients shed virus.
 
         Parameters
         ----------
@@ -773,8 +778,8 @@ class Model:
     @_augment_values
     def _evaluate_patient_log_likelihood(self, values, data):
         """
-        Evaluate the log likelihood for each patient conditional on all model parameters, assuming
-        that all patients shed virus.
+        Evaluate the log likelihood for each patient conditional on all model
+        parameters, assuming that all patients shed virus.
         """
         result = self._evaluate_sample_log_likelihood(values, data)
         return np.bincount(data["idx"], result, minlength=data["num_patients"])
@@ -804,8 +809,8 @@ class Model:
         self, values, data, n=1000, eps=1e-6, **kwargs
     ):
         """
-        Evaluate the log likelihood of the observed data marginalised with respect to group-level
-        parameters but conditional on hyperparameters.
+        Evaluate the log likelihood of the observed data marginalised with respect to
+        group-level parameters but conditional on hyperparameters.
 
         Parameters
         ----------
@@ -814,8 +819,8 @@ class Model:
         data : dict
             Data from which the posterior samples were inferred.
         n : int or str
-            Number of samples to use if simulation is required to evaluate the likelihood or `scipy`
-            for numerical integration.
+            Number of samples to use if simulation is required to evaluate the
+            likelihood or `scipy` for numerical integration.
         eps: float
             Value to clip the patient mean at to avoid underflows.
 
@@ -837,8 +842,8 @@ class Model:
                 ),
                 eps,
             )
-            # Evaluate the sample log likelihood and marginalise with respect to the patient-level
-            # attributes
+            # Evaluate the sample log likelihood and marginalise with respect to the
+            # patient-level attributes.
             sample_likelihood = self._evaluate_sample_log_likelihood(values, data)
             sample_likelihood = logmeanexp(sample_likelihood, axis=0)
 
@@ -881,9 +886,10 @@ class Model:
         if not self.inflated:
             return patient_likelihood
 
-        # Patients that have all-negative samples may be non-shedders. So the data are either
-        # generated by having some latent indicator z==0 or z==1 but the samples are too small to be
-        # above the LOQ. So we need to evaluate the mixture distribution.
+        # Patients that have all-negative samples may be non-shedders. So the data are
+        # either generated by having some latent indicator z==0 or z==1 but the samples
+        # are too small to be above the LOQ. So we need to evaluate the mixture
+        # distribution.
         all_negative = data["num_positives_by_patient"] == 0
         patient_likelihood = np.where(
             all_negative,
@@ -948,9 +954,9 @@ class Model:
         data : dict
             Data from which the posterior samples were inferred.
         simulation_mode : SimulationMode
-            Whether to simulate only the lowest level of the hierarchical model (e.g. generate new
-            data from existing groups) or simulate the entire hierarchy (e.g. generate new data from
-            new groups).
+            Whether to simulate only the lowest level of the hierarchical model (e.g.
+            generate new data from existing groups) or simulate the entire hierarchy
+            (e.g. generate new data from new groups).
 
         Returns
         -------

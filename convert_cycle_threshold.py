@@ -8,7 +8,8 @@ LOOKUP = {
     # See 2nd paragraph, 2nd column, first page of main text (10.1001/jama.2020.3786).
     "Wang2020-thresholds": [30, 24.3],
     "Wang2020-loads": np.log10([2.6e4, 1.4e6]),
-    # See supplementary table 4 (10.3346/jkms.2020.35.e86); conversion is for respiratory specimen.
+    # See supplementary table 4 (10.3346/jkms.2020.35.e86); conversion is for
+    # respiratory specimen.
     "Kim2020b-thresholds": [25.05, 35.09],
     "Kim2020b-loads": np.log10([46971053, 61341]),
 }

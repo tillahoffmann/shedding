@@ -36,7 +36,8 @@ def test_dataset(filename, schema):
             continue
         assert summary["n"] == summary["negative"] + summary["positive"]
 
-    # If there are viral loads and patient details, make sure that any patient reference is fine
+    # If there are viral loads and patient details, make sure that any patient
+    # reference is fine.
     patient_details = dataset.get("patients", {}).get("details")
     if patient_details:
         loads = dataset.get("loads", [])
@@ -66,7 +67,8 @@ def test_flatten_datasets():
     assert data["num_positives_by_patient"][i] == 10
     assert data["num_negatives_by_patient"][i] == 1
 
-    # Consistency check (with one more negative because it's below the level of quantification)
+    # Consistency check (with one more negative because it's below the level of
+    # quantification).
     assert data["num_samples_by_patient"].sum() == woelfel["samples"]["n"]
     assert data["num_positives_by_patient"].sum() == woelfel["samples"]["positive"] - 1
     assert data["num_negatives_by_patient"].sum() == woelfel["samples"]["negative"] + 1

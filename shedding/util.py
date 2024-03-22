@@ -52,15 +52,16 @@ def dict_to_array(mapping, size=None, fill_value=0, dtype=None):
 
 def extract_kvps(x, pattern="(.*?)_rep$"):
     """
-    Extract key-value pairs matching a pattern from a dictionary or list of dictionaries.
+    Extract key-value pairs matching a pattern from a dictionary or list of
+    dictionaries.
 
     Parameters
     ----------
     x : dict or list[dict]
         Dictionary or list of dictionaries from which to extract key-value pairs.
     pattern : str
-        Regular expression pattern to match keys against. The first capture group determines the
-        key in the resulting dictionary.
+        Regular expression pattern to match keys against. The first capture group
+        determines the key in the resulting dictionary.
 
     Returns
     -------
@@ -205,8 +206,8 @@ def plot_kde(kde, xmin=None, xmax=None, factor=3, numlin=50, ax=None, **kwargs):
     xmax : float
         Upper limit of the kernel density estimate.
     factor : float
-        Multiplicative factor for the kernel density estimate standard deviation to extend the range
-        of the kernel density estimate.
+        Multiplicative factor for the kernel density estimate standard deviation to
+        extend the range of the kernel density estimate.
     numlin : int
         Number of points at which to evaluate the kernel density estimate.
     ax :
@@ -235,7 +236,8 @@ def plot_replication_summary(data, replicates_by_model, target=None, ax=None, **
     data :
         Data used to generate replicates.
     replicates_by_model : dict[str, list] or list
-        List of replicates keyed by model name or a list of replicates for a single model.
+        List of replicates keyed by model name or a list of replicates for a single
+        model.
     target : callable
         Function to extract summary statistics from the data or replicates.
     ax :
@@ -264,15 +266,16 @@ def plot_replication_summary(data, replicates_by_model, target=None, ax=None, **
 
 def logmeanexp(x, axis=None, **kwargs):
     """
-    Evaluate the logarithm of the mean of exponentiated values in a numerically stable fashion.
+    Evaluate the logarithm of the mean of exponentiated values in a numerically stable
+    fashion.
 
     Parameters
     ----------
     x : array_like
         Input array.
     axis : None or int or tuple[int], optional
-        Axis or axes over which the mean is taken. By default `axis` is None, and all elements are
-        averaged.
+        Axis or axes over which the mean is taken. By default `axis` is None, and all
+        elements are averaged.
     **kwargs : dict
         Keyword arguments passed to `scipy.special.logsumexp`.
 
@@ -310,7 +313,8 @@ def broadcast_shapes(*shapes):
     Returns
     -------
     broadcasted_shape : tuple
-        Shape of the array that would be obtained when broadcasting the shapes against each other.
+        Shape of the array that would be obtained when broadcasting the shapes against
+        each other.
 
     Examples
     --------
