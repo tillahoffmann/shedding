@@ -6,6 +6,7 @@ try:
     from Cython.Build import cythonize
     ext = cythonize('shedding/_util.pyx', language_level=3)
 except ImportError:
+    assert False
     ext = [Extension('_util', ['shedding/_util.c'])]
 
 
@@ -26,7 +27,6 @@ setup(
     install_requires=[
         'numpy',
         'scipy',
-        'cyfunc>=0.1.4',
     ],
     setup_requires=[
         'cython',
