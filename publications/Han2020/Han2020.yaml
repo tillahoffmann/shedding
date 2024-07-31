@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=../../schema.yaml
+assay: PowerChek-E
+doi: 10.1093/cid/ciaa447
+key: Han et al. 2020
+loads:
+- day: 9
+  patient: 0
+  value: 4.616479
+- day: 15
+  patient: 0
+  value: null
+- day: 6
+  patient: 1
+  value: 6.792
+- day: 8
+  patient: 1
+  value: 6.593
+- day: 10
+  patient: 1
+  value: 7.219
+- day: 13
+  patient: 1
+  value: 6.383
+- day: 15
+  patient: 1
+  value: 7.618
+- day: 17
+  patient: 1
+  value: 6.23
+- day: 18
+  patient: 1
+  value: 5.855
+loq: 3.7558748557
+patients:
+  details:
+  - description: mother
+  - age: 0
+    description: neonate
+  n: 2
+  negative: 0
+  positive: 2
+samples:
+  n: 9
+  negative: 1
+  positive: 8
+temporal: symptoms
+title: Sequential Analysis of Viral Load in a Neonate and Her Mother Infected With
+  Severe Acute Respiratory Syndrome Coronavirus 2

@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=../../schema.yaml
+assay: S
+doi: 10.1016/j.cmi.2020.07.020
+key: Jeong et al. 2020
+loads:
+- day: 8
+  err: null
+  patient: 1
+  stage: recovery
+  value: null
+- day: 13
+  err: 0.19
+  patient: 2
+  stage: recovery
+  value: 1.51
+- day: 11
+  err: null
+  patient: 3
+  stage: recovery
+  value: null
+- day: 15
+  err: 0.11
+  patient: 4
+  stage: acute
+  value: 2.18
+- day: 30
+  err: 0.28
+  patient: 5
+  stage: recovery
+  value: 2.01
+loq: 0.3
+patients:
+  n: 5
+  negative: 2
+  positive: 3
+samples:
+  n: 5
+  negative: 2
+  positive: 3
+temporal: symptoms
+title: Viable SARS-CoV-2 in various specimens from COVID-19 patients

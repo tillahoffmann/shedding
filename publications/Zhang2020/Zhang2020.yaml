@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=../../schema.yaml
+assay: ORF1ab
+doi: 10.1007/s11427-020-1783-9
+key: Zhang et al. 2020
+load_summaries:
+  max: 6.3
+  mean: 3.7499680835
+loq: null
+patients:
+  n: 12
+  negative: 2
+  positive: 10
+samples:
+  n: 51
+title: Comparative study on virus shedding patterns in nasopharyngeal and fecal specimens
+  of COVID-19 patients
+url: https://engine.scichina.com/publisher/scp/journal/SCLS/doi/10.1007/s11427-020-1783-9

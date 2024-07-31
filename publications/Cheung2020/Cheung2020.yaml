@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=../../schema.yaml
+assay: '?'
+doi: 10.1053/j.gastro.2020.03.065
+key: Cheung et al. 2020
+load_summaries:
+  max: 7.6
+  median: 4.7
+  min: 3.4
+loq: null
+patients:
+  n: 59
+  negative: 50
+  positive: 9
+samples: {}
+title: 'Gastrointestinal Manifestations of SARS-CoV-2 Infection and Virus Load in
+  Fecal Samples From a Hong Kong Cohort: Systematic Review and Meta-analysis'

@@ -1,25 +1,25 @@
 from glob import glob
-import json
 import jsonschema
 import os
 import pytest
 import shedding
+import yaml
 
 
-@pytest.fixture(params=glob("publications/*/*.json"))
+@pytest.fixture(params=glob("publications/*/*.yaml"))
 def filename(request):
     return request.param
 
 
 @pytest.fixture(scope="module")
 def schema():
-    with open("schema.json") as fp:
-        return json.load(fp)
+    with open("schema.yaml") as fp:
+        return yaml.safe_load(fp)
 
 
 def test_dataset(filename, schema):
     with open(filename) as fp:
-        dataset = json.load(fp)
+        dataset = yaml.safe_load(fp)
 
     # Validate against the schema
     try:

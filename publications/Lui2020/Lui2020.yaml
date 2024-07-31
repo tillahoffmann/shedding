@@ -1,0 +1,157 @@
+# yaml-language-server: $schema=../../schema.yaml
+assay: 2019-nCoV_N1
+doi: 10.1016/j.jinf.2020.04.014
+key: Lui et al. 2020
+loads:
+- day: 15
+  patient: 0
+  value: null
+- day: 20
+  patient: 0
+  value: 3.586699801624049
+- day: 21
+  patient: 0
+  value: 4.11882666293329
+- day: 22
+  patient: 0
+  value: 3.4379090355394983
+- day: 23
+  patient: 0
+  value: null
+- day: 25
+  patient: 0
+  value: null
+- day: 29
+  patient: 0
+  value: null
+- day: 35
+  patient: 0
+  value: null
+- day: 16
+  patient: 1
+  value: 5.038218661294813
+- day: 17
+  patient: 1
+  value: 3.7762652182681093
+- day: 18
+  patient: 1
+  value: 2.989894563718773
+- day: 19
+  patient: 1
+  value: 3.210318519826232
+- day: 20
+  patient: 1
+  value: null
+- day: 23
+  patient: 1
+  value: null
+- day: 30
+  patient: 1
+  value: null
+- day: 19
+  patient: 2
+  value: null
+- day: 21
+  patient: 2
+  value: null
+- day: 22
+  patient: 2
+  value: 3.3010299956639813
+- day: 23
+  patient: 2
+  value: null
+- day: 14
+  patient: 3
+  value: 3.744918542441353
+- day: 18
+  patient: 3
+  value: null
+- day: 19
+  patient: 3
+  value: null
+- day: 21
+  patient: 3
+  value: null
+- day: 15
+  patient: 4
+  value: 4.738431714820286
+- day: 17
+  patient: 4
+  value: 3.7026889681591335
+- day: 18
+  patient: 4
+  value: null
+- day: 9
+  patient: 5
+  value: 4.601114372095721
+- day: 12
+  patient: 5
+  value: 4.498834148837391
+- day: 14
+  patient: 5
+  value: 3.256717745977487
+- day: 18
+  patient: 5
+  value: null
+- day: 20
+  patient: 5
+  value: null
+- day: 12
+  patient: 6
+  value: 3.513350798805957
+- day: 13
+  patient: 6
+  value: null
+- day: 16
+  patient: 6
+  value: null
+- day: 6
+  patient: 7
+  value: 4.966826673353475
+- day: 7
+  patient: 7
+  value: 5.196369653167609
+- day: 8
+  patient: 7
+  value: 4.256669648687233
+- day: 9
+  patient: 7
+  value: 4.73430366675543
+- day: 10
+  patient: 7
+  value: 4.104623660435326
+- day: 19
+  patient: 8
+  value: 6.441390944462272
+- day: 8
+  patient: 9
+  value: 3.8997110945711446
+- day: 8
+  patient: 10
+  value: 3.2830749747354715
+- day: 10
+  patient: 10
+  value: null
+loq: 2.8414345581
+patients:
+  details:
+  - severity: critical
+  - severity: critical
+  - severity: severe
+  - severity: moderate
+  - severity: severe
+  - severity: moderate
+  - severity: moderate
+  - severity: moderate
+  - severity: severe
+  - severity: mild
+  - severity: moderate
+  n: 11
+  negative: 0
+  positive: 11
+samples:
+  n: 43
+  negative: 20
+  positive: 23
+temporal: symptoms
+title: Viral dynamics of SARS-CoV-2 across a spectrum of disease severity in COVID-19

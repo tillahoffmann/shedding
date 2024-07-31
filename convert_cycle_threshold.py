@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import argparse
-import json
 import numpy as np
+import yaml
 
 
 LOOKUP = {
@@ -27,7 +27,7 @@ def parse_values(values):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--format", choices=["plain", "json"], default="json", help="output format"
+        "--format", choices=["plain", "yaml"], default="yaml", help="output format"
     )
     parser.add_argument(
         "--log10",
@@ -46,9 +46,9 @@ if __name__ == "__main__":
     poly = np.polynomial.Polynomial.fit(args.reference, args.target, 1)
     results = poly(np.log10(args.values) if args.log10 else args.values)
 
-    if args.format == "json":
+    if args.format == "yaml":
         results = [{"reference": x, "target": y} for x, y in zip(args.values, results)]
-        print(json.dumps(results, indent=4))
+        print(yaml.dumps(results, indent=4))
     elif args.format == "plain":
         print("\n".join(map(str, results)))
     else:
