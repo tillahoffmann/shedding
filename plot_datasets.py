@@ -1,7 +1,7 @@
 from glob import glob
-import json
 from matplotlib import pyplot as plt
 import numpy as np
+import yaml
 
 
 def to_float(x):
@@ -15,7 +15,7 @@ arrow_kwargs = {
     "head_width": 0.1,
 }
 lim_length = 0.25
-filenames = glob("publications/*/*.json")
+filenames = glob("publications/*/*.yaml")
 
 fig, ax = plt.subplots()
 ylabels = []
@@ -23,7 +23,7 @@ for i, filename in enumerate(sorted(filenames, reverse=True)):
     color = f"C{i}"
 
     with open(filename) as fp:
-        publication = json.load(fp)
+        publication = yaml.safe_load(fp)
     ylabels.append(publication["key"])
 
     # Plot the level of quantification

@@ -1,7 +1,7 @@
 import collections
-import json
 import numpy as np
 import os
+import yaml
 from .util import dict_to_array
 
 
@@ -22,8 +22,8 @@ def load_dataset(name, root=None):
         Loaded dataset as a dictionary.
     """
     root = root or os.getcwd()
-    with open(os.path.join(root, name, name + ".json")) as fp:
-        return json.load(fp)
+    with open(os.path.join(root, name, name + ".yaml")) as fp:
+        return yaml.safe_load(fp)
 
 
 def load_datasets(names, root=None):

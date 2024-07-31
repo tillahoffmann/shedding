@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=../../schema.yaml
+assay: RdRp_SARSr
+doi: 10.24171/j.phrp.2020.11.3.02
+key: Kim et al. 2020
+load_summaries:
+  max: 7.4363217001
+  mean: 6.5018804938
+  min: 4.4313637642
+  std: 6.857814778
+loq: null
+patients:
+  n: 38
+  negative: 30
+  positive: 8
+samples:
+  n: 129
+  negative: 116
+  positive: 13
+title: Detection and Isolation of SARS-CoV-2 in Serum, Urine, and Stool Specimens
+  of COVID-19 Patients from the Republic of Korea

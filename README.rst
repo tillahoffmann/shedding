@@ -15,7 +15,7 @@ Uncertainties surrounding the concentration of viral RNA fragments in the faeces
 📊 Datasets
 -----------
 
-Datasets can be found in the ``publications`` directory as JSON files following a common schema (see ``schema.json`` for details). All RNA loads are reported as log10 gene copies per mL. The results from individual samples are linked to patients wherever possible to provide longitudional information.
+Datasets can be found in the ``publications`` directory as YAML files following a common schema (see ``schema.yaml`` for details). All RNA loads are reported as log10 gene copies per mL. The results from individual samples are linked to patients wherever possible to provide longitudional information.
 
 .. jinja::
 

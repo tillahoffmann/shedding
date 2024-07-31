@@ -12,10 +12,10 @@ from docutils import nodes
 from glob import glob
 import inspect
 from jinja2 import Template
-import json
 import os
 import shedding
 import sphinx
+import yaml
 
 
 def _parse_key(argument):
@@ -74,12 +74,12 @@ def setup(app):
 
 
 # -- Datasets for jinja templates --------------------------------------------
-filenames = glob("publications/*/*.json")
+filenames = glob("publications/*/*.yaml")
 jinja_context = {}
 for filename in sorted(filenames):
     with open(filename) as fp:
         key, _ = os.path.splitext(os.path.basename(filename))
-        jinja_context.setdefault("publications", {})[key] = json.load(fp)
+        jinja_context.setdefault("publications", {})[key] = yaml.safe_load(fp)
 
 # Get all modules for the documentation
 modules = set()
@@ -130,7 +130,11 @@ templates_path = ["_templates"]
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = [
+    ".eggs",
+    "build",
     "PolyChordLite",
+    "README.rst",
+    "venv",
 ]
 
 # -- Options for HTML output -------------------------------------------------

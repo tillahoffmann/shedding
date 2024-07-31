@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=http://json-schema.org/draft-07/schema
+definitions:
+  assays:
+    enum:
+    - RdRp_SARSr
+    - ORF1ab
+    - 2019-nCoV_N1
+    - PowerChek-E
+    - E_Sarbeco
+    - CCDC-ORF1ab
+    - HKU-N
+    - S
+    - '?'
+    type: string
+properties:
+  assay:
+    description: assay or primer/probe set used to quantify RNA
+    oneOf:
+    - $ref: '#/definitions/assays'
+    - items:
+        $ref: '#/definitions/assays'
+      type: array
+  doi:
+    description: digital object identifier to retrieve the publication or dataste
+    type: string
+  key:
+    description: unique identifier for a dataset (typically the same as a publication)
+    type: string
+  loads:
+    items:
+      additionalProperties: false
+      properties:
+        day:
+          description: day as reported by the study (often since symptom onset or
+            hospital admission)
+          type: integer
+        err:
+          description: optional error estimate for the viral load value
+          type:
+          - number
+          - 'null'
+        patient:
+          description: zero-based unique patient identifier
+          type: integer
+        severity: {}
+        stage: {}
+        threshold:
+          description: semi-quantitative qPCR cycle threshold
+          type: number
+        value:
+          description: viral load as log10 copies per mL
+          type:
+          - number
+          - 'null'
+      required:
+      - value
+      type: object
+    type: array
+  loq:
+    description: level of quantification, i.e. the smallest possible concentration
+      that can be measured, or `null` if not available
+    type:
+    - number
+    - 'null'
+  patients:
+    additionalProperties: false
+    properties:
+      details:
+        description: details about individual patients
+        type: array
+      n:
+        description: number of patients in the study
+        type: integer
+      negative:
+        description: number of patients without any positive stool samples
+        type: integer
+      positive:
+        description: number of patients with at least one positive stool sample
+        type: integer
+    type: object
+  samples:
+    additionalProperties: false
+    properties:
+      n:
+        description: number of samples analysed in the study
+        type: integer
+      negative:
+        description: number of negative samples
+        type: integer
+      positive:
+        description: number of positive samples
+        type: integer
+    type: object
+  temporal:
+    description: reference for reporting of temporal information, if available
+    enum:
+    - symptoms
+    - admission
+    type: string
+  title:
+    description: title of the publication
+    type: string
+required:
+- key
+- doi
+- assay
+- title
+- patients
+- samples
+- loq
+type: object

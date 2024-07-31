@@ -154,6 +154,7 @@ figures/
 publications/*/*
 # ... except the summary and data
 !publications/*/*.json
+!publications/*/*.yaml
 !publications/*/*.rst
 
 shedding/*.c
